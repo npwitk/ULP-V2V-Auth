@@ -1,0 +1,11 @@
+node_modules/
+build/
+keys/
+
+# Keep results (benchmark data) but ignore large binaries
+results/*.pdf
+results/*.png
+
+# OS
+.DS_Store
+*.swp

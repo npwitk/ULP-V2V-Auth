@@ -1,0 +1,18 @@
+{
+  "name": "ulp-v2v-auth",
+  "version": "1.0.0",
+  "description": "ULP-V2V-Auth: Ultra-Low-Latency Privacy-Preserving V2V Authentication using Groth16 zk-SNARKs",
+  "scripts": {
+    "setup":      "bash scripts/setup.sh",
+    "gen-input":  "node scripts/gen_input.js",
+    "prove":      "node scripts/prove_and_verify.js",
+    "bench":      "node benchmark/bench_prover.js",
+    "bench-batch":"node benchmark/bench_batch_verify.js",
+    "plot":       "python3 benchmark/plot_results.py"
+  },
+  "dependencies": {
+    "snarkjs":      "^0.7.4",
+    "circomlibjs":  "^0.1.7",
+    "ffjavascript": "^0.3.0"
+  }
+}
