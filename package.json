@@ -13,6 +13,7 @@
   "dependencies": {
     "snarkjs":      "^0.7.4",
     "circomlibjs":  "^0.1.7",
+    "circomlib":    "^2.0.5",
     "ffjavascript": "^0.3.0"
   }
 }

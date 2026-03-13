@@ -118,7 +118,7 @@ def plot_batch_verify():
 
     rows = d["results"]
     ks   = [r["k"] for r in rows]
-    seq  = [r["seqMeanMs"] for r in rows]
+    seq  = [r["seqMs"] for r in rows]
     p_ind   = [r["pairingsIndividual"] for r in rows]
     p_batch = [r["pairingsBatch"]      for r in rows]
     savings = [r["theoreticalSaving"]  for r in rows]

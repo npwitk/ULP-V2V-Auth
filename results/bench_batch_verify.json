@@ -1,0 +1,68 @@
+{
+  "hardware": "Mac (run on device)",
+  "circuit": "ULP_V2V_Auth(depth=8)",
+  "nRepeat": 3,
+  "timestamp": "2026-03-13T15:02:46.348Z",
+  "results": [
+    {
+      "k": 1,
+      "seqMs": 5.636736333333299,
+      "batchMs": 4.4472360000000135,
+      "actualSaving": 1.27,
+      "theoreticalSaving": 0.75,
+      "pairingsIndividual": 3,
+      "pairingsBatch": 4,
+      "batchValid": true
+    },
+    {
+      "k": 5,
+      "seqMs": 30.851985999999897,
+      "batchMs": 10.751569333333313,
+      "actualSaving": 2.87,
+      "theoreticalSaving": 1.88,
+      "pairingsIndividual": 15,
+      "pairingsBatch": 8,
+      "batchValid": true
+    },
+    {
+      "k": 10,
+      "seqMs": 50.15469400000014,
+      "batchMs": 18.104291666666693,
+      "actualSaving": 2.77,
+      "theoreticalSaving": 2.31,
+      "pairingsIndividual": 30,
+      "pairingsBatch": 13,
+      "batchValid": true
+    },
+    {
+      "k": 20,
+      "seqMs": 98.90845866666648,
+      "batchMs": 30.26213899999978,
+      "actualSaving": 3.27,
+      "theoreticalSaving": 2.61,
+      "pairingsIndividual": 60,
+      "pairingsBatch": 23,
+      "batchValid": true
+    },
+    {
+      "k": 30,
+      "seqMs": 147.8687363333332,
+      "batchMs": 45.04422233333268,
+      "actualSaving": 3.28,
+      "theoreticalSaving": 2.73,
+      "pairingsIndividual": 90,
+      "pairingsBatch": 33,
+      "batchValid": true
+    },
+    {
+      "k": 50,
+      "seqMs": 246.3918893333333,
+      "batchMs": 72.37638866666627,
+      "actualSaving": 3.4,
+      "theoreticalSaving": 2.83,
+      "pairingsIndividual": 150,
+      "pairingsBatch": 53,
+      "batchValid": true
+    }
+  ]
+}
