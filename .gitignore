@@ -10,3 +10,4 @@ results/*.png
 .DS_Store
 *.swp
 /.claude
+/TeX

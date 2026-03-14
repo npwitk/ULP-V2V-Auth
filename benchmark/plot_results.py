@@ -117,11 +117,13 @@ def plot_batch_verify():
         d = json.load(f)
 
     rows = d["results"]
-    ks   = [r["k"] for r in rows]
-    seq  = [r["seqMs"] for r in rows]
-    p_ind   = [r["pairingsIndividual"] for r in rows]
-    p_batch = [r["pairingsBatch"]      for r in rows]
-    savings = [r["theoreticalSaving"]  for r in rows]
+    ks            = [r["k"]                  for r in rows]
+    seq           = [r["seqMs"]              for r in rows]
+    batch         = [r["batchMs"]            for r in rows]
+    p_ind         = [r["pairingsIndividual"] for r in rows]
+    p_batch       = [r["pairingsBatch"]      for r in rows]
+    savings_theory= [r["theoreticalSaving"]  for r in rows]
+    savings_actual= [r["actualSaving"]       for r in rows]
 
     fig, axes = plt.subplots(1, 2, figsize=(9, 3.8))
     fig.suptitle("ULP-V2V-Auth Batch Verification Analysis", y=1.01)
@@ -136,13 +138,13 @@ def plot_batch_verify():
     ax.scatter(ks, p_ind,   color=RED,   s=40, zorder=5)
     ax.scatter(ks, p_batch, color=BLUE,  s=40, zorder=5)
 
-    # Annotate savings at k=30
+    # Annotate theoretical savings at k=30 (pairing count ratio)
     k30_ind   = 3 * 30
     k30_batch = 30 + 3
     ax.annotate(
-        f"×{k30_ind/k30_batch:.1f}\nat k=30",
+        f"×{k30_ind/k30_batch:.1f} theory\n×3.28 measured\nat k=30",
         xy=(30, (k30_ind + k30_batch) / 2),
-        xytext=(35, (k30_ind + k30_batch) / 2),
+        xytext=(35, (k30_ind + k30_batch) / 2 - 10),
         arrowprops=dict(arrowstyle="-|>", color=GREY),
         fontsize=8, color=GREY,
     )
@@ -154,21 +156,33 @@ def plot_batch_verify():
     ax.grid(linestyle="--", alpha=0.4)
     ax.set_title("Pairing Operation Count")
 
-    # --- Right: Actual sequential verify time + savings factor ---
+    # --- Right: Sequential vs batch timing + actual saving factor ---
     ax2 = axes[1]
-    color_seq = BLUE
-    ax2.bar(ks, seq, color=color_seq, alpha=0.7, label="Sequential verify (ms)")
+    x = np.array(ks, dtype=float)
+    width = 1.8
+    ax2.bar(x - width / 2, seq,   width=width, color=BLUE,  alpha=0.7, label="Sequential verify (ms)")
+    ax2.bar(x + width / 2, batch, width=width, color=GREEN, alpha=0.7, label="Batch verify (ms)")
     ax2.set_xlabel("Batch size $k$")
-    ax2.set_ylabel("Total verification time (ms)", color=color_seq)
-    ax2.tick_params(axis="y", labelcolor=color_seq)
+    ax2.set_ylabel("Total verification time (ms)")
+    ax2.tick_params(axis="y")
 
     ax3 = ax2.twinx()
-    ax3.plot(ks, savings, color=RED, marker="o", linewidth=2, label="Theoretical batch saving (×)")
-    ax3.set_ylabel("Theoretical saving factor (×)", color=RED)
+    ax3.plot(ks, savings_actual, color=RED,  marker="o", linewidth=2,
+             label="Measured saving (×)")
+    ax3.plot(ks, savings_theory, color=RED,  marker="s", linewidth=1.5,
+             linestyle="--", alpha=0.5, label="Theory saving (×)")
+    # Label the two key measured points
+    for k_val, s_val in zip(ks, savings_actual):
+        if k_val in (30, 50):
+            ax3.annotate(f"×{s_val:.2f}",
+                         xy=(k_val, s_val),
+                         xytext=(k_val - 6, s_val + 0.15),
+                         fontsize=8, color=RED)
+    ax3.set_ylabel("Saving factor (×)", color=RED)
     ax3.tick_params(axis="y", labelcolor=RED)
-    ax3.set_ylim(0, max(savings) * 1.3)
+    ax3.set_ylim(0, max(savings_actual) * 1.35)
 
-    ax2.set_title("Verification Time & Batch Savings")
+    ax2.set_title("Measured Timing & Saving Factor")
     ax2.grid(axis="y", linestyle="--", alpha=0.4)
 
     lines1, labels1 = ax2.get_legend_handles_labels()
