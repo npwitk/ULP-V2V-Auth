@@ -1,0 +1,21 @@
+{
+  "hardware": "macOS — Apple M4",
+  "curve": "BN254 (bn128)",
+  "nWarmup": 5,
+  "nRuns": 20,
+  "timestamp": "2026-03-17T15:31:50.823Z",
+  "fullPairing": {
+    "mean_ms": 2.7325437500000036,
+    "std_ms": 0.061730792216585076
+  },
+  "millerLoop": {
+    "mean_ms": 0.8955854500000016,
+    "std_ms": 0.06479652786027537
+  },
+  "finalExponentiation": {
+    "mean_ms": 1.4255417499999994,
+    "std_ms": 0.06517353546637361
+  },
+  "finalExpPercent": 61.4,
+  "millerPercent": 38.6
+}

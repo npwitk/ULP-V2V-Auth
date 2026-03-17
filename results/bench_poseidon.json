@@ -1,0 +1,18 @@
+{
+  "hardware": "macOS — Apple M4",
+  "operation": "Poseidon-2: F.toObject(poseidon([message, tCurrent]))",
+  "nWarmup": 200,
+  "nRuns": 5000,
+  "batchSize": 1000,
+  "timestamp": "2026-03-17T15:32:00.366Z",
+  "individual": {
+    "mean_ms": 0.0464274748000001,
+    "std_ms": 0.01876639202974732
+  },
+  "amortised": {
+    "mean_ms": 0.04550557356666665,
+    "std_ms": 0.0006805210121430222
+  },
+  "bsmCycle_ms": 100,
+  "percentOfBsmCycle": 0.045506
+}
