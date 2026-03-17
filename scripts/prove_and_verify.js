@@ -15,6 +15,20 @@
 const snarkjs = require("snarkjs");
 const fs      = require("fs");
 const path    = require("path");
+const os      = require("os");
+
+function detectHardware() {
+    if (process.platform === "linux" && fs.existsSync("/proc/cpuinfo")) {
+        const cpuinfo = fs.readFileSync("/proc/cpuinfo", "utf8");
+        const modelMatch = cpuinfo.match(/^Model\s*:\s*(.+)$/m);
+        if (modelMatch) return modelMatch[1].trim();
+        const hwMatch = cpuinfo.match(/^Hardware\s*:\s*(.+)$/m);
+        if (hwMatch) return `Linux/${hwMatch[1].trim()}`;
+    }
+    const cpu = os.cpus()[0]?.model ?? "Unknown CPU";
+    const platform = process.platform === "darwin" ? "macOS" : os.platform();
+    return `${platform} — ${cpu}`;
+}
 
 const WASM = path.join("build", "ulp_v2v_auth_js", "ulp_v2v_auth.wasm");
 const ZKEY = path.join("keys",  "ulp_v2v_auth_final.zkey");
@@ -89,8 +103,11 @@ async function main() {
     console.log(`  Verify      : ${verifyMs.toFixed(1)} ms  (online, per-BSM)`);
     console.log(`  Proof size  : ~128 bytes`);
     console.log("=".repeat(52));
-    console.log("\nNote: These are Apple Silicon numbers.");
-    console.log("Multiply by ~6–8x for Raspberry Pi 4 (ARM Cortex-A72 @ 1.8 GHz).");
+    const hw = detectHardware();
+    console.log(`\nHardware: ${hw}`);
+    if (!hw.toLowerCase().includes("raspberry")) {
+        console.log("Multiply by ~6–8x for Raspberry Pi 4 (ARM Cortex-A72 @ 1.8 GHz).");
+    }
 
     // Save proof and public signals for batch benchmark reuse
     fs.mkdirSync("build", { recursive: true });
