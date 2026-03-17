@@ -62,11 +62,14 @@ function findRapidsnark() {
     try { return execSync("which rapidsnark", { stdio: ["pipe","pipe","pipe"] }).toString().trim(); } catch {}
     // 2. Common build locations
     const candidates = [
+        "/usr/local/bin/rapidsnark",
+        "/usr/local/bin/prover",          // installed name on some builds
+        "/usr/bin/rapidsnark",
+        "/usr/bin/prover",
         path.join(os.homedir(), "rapidsnark", "build_prover", "src", "prover"),
         path.join(os.homedir(), "rapidsnark", "build_prover", "prover"),
         path.join(os.homedir(), "rapidsnark", "build", "src", "prover"),
-        "/usr/local/bin/rapidsnark",
-        "/usr/bin/rapidsnark",
+        path.join(os.homedir(), "rapidsnark", "build", "prover"),
     ];
     for (const c of candidates) {
         if (fs.existsSync(c)) return c;
