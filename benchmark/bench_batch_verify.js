@@ -21,6 +21,20 @@ const { buildPoseidon } = require("circomlibjs");
 const { batchVerify, buildBatchCurve } = require("./groth16_batch_verify");
 const fs   = require("fs");
 const path = require("path");
+const os   = require("os");
+
+function detectHardware() {
+    if (process.platform === "linux" && fs.existsSync("/proc/cpuinfo")) {
+        const cpuinfo = fs.readFileSync("/proc/cpuinfo", "utf8");
+        const modelMatch = cpuinfo.match(/^Model\s*:\s*(.+)$/m);
+        if (modelMatch) return modelMatch[1].trim();
+        const hwMatch = cpuinfo.match(/^Hardware\s*:\s*(.+)$/m);
+        if (hwMatch) return `Linux/${hwMatch[1].trim()}`;
+    }
+    const cpu = os.cpus()[0]?.model ?? "Unknown CPU";
+    const platform = process.platform === "darwin" ? "macOS" : os.platform();
+    return `${platform} — ${cpu}`;
+}
 
 const BATCH_SIZES = [1, 5, 10, 20, 30, 50];
 const N_REPEAT    = 3;
@@ -139,7 +153,7 @@ async function main() {
     fs.mkdirSync("results", { recursive: true });
     const outPath = path.join("results", "bench_batch_verify.json");
     fs.writeFileSync(outPath, JSON.stringify({
-        hardware: "Mac (run on device)",
+        hardware: detectHardware(),
         circuit: "ULP_V2V_Auth(depth=8)",
         nRepeat: N_REPEAT,
         timestamp: new Date().toISOString(),

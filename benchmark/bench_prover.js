@@ -16,6 +16,28 @@
 const snarkjs = require("snarkjs");
 const fs      = require("fs");
 const path    = require("path");
+const os      = require("os");
+
+/**
+ * Detect hardware description automatically.
+ * On Raspberry Pi, /proc/cpuinfo contains "Model : Raspberry Pi ..."
+ * On macOS, os.cpus()[0].model has the chip name.
+ */
+function detectHardware() {
+    // Raspberry Pi (Linux): read /proc/cpuinfo for the Model line
+    if (process.platform === "linux" && fs.existsSync("/proc/cpuinfo")) {
+        const cpuinfo = fs.readFileSync("/proc/cpuinfo", "utf8");
+        const modelMatch = cpuinfo.match(/^Model\s*:\s*(.+)$/m);
+        if (modelMatch) return modelMatch[1].trim();
+        // Fallback: use Hardware field
+        const hwMatch = cpuinfo.match(/^Hardware\s*:\s*(.+)$/m);
+        if (hwMatch) return `Linux/${hwMatch[1].trim()}`;
+    }
+    // macOS / generic: use OS + CPU model
+    const cpu = os.cpus()[0]?.model ?? "Unknown CPU";
+    const platform = process.platform === "darwin" ? "macOS" : os.platform();
+    return `${platform} — ${cpu}`;
+}
 
 // -------------------------------------------------------
 // Config
@@ -113,7 +135,7 @@ async function main() {
     // -------------------------------------------------------
     fs.mkdirSync("results", { recursive: true });
     const results = {
-        hardware    : "Mac (run on device)",
+        hardware    : detectHardware(),
         circuit     : "ULP_V2V_Auth(depth=8)",
         nWarmup     : N_WARMUP,
         nRuns       : N_RUNS,
@@ -137,12 +159,16 @@ async function main() {
     fs.writeFileSync(outPath, JSON.stringify(results, null, 2));
     console.log(`\nResults saved to ${outPath}`);
 
-    console.log("\n" + "=".repeat(52));
-    console.log("  RPi 4 Estimate (×6–8 slowdown on Cortex-A72)");
-    console.log("=".repeat(52));
-    const rpiMult = 7;
-    console.log(`  Full prove  : ~${(mean(fullTimes) * rpiMult / 1000).toFixed(1)} s   (offline, once per AST)`);
-    console.log(`  Witness gen : ~${(mean(witnessOnlyTimes) * rpiMult).toFixed(0)} ms  (online proxy per BSM)`);
+    // Show RPi estimate only when running on a non-RPi device
+    const hw = detectHardware();
+    if (!hw.toLowerCase().includes("raspberry")) {
+        console.log("\n" + "=".repeat(52));
+        console.log("  RPi 4 Estimate (×6–8 slowdown on Cortex-A72)");
+        console.log("=".repeat(52));
+        const rpiMult = 7;
+        console.log(`  Full prove  : ~${(mean(fullTimes) * rpiMult / 1000).toFixed(1)} s   (offline, once per AST)`);
+        console.log(`  Witness gen : ~${(mean(witnessOnlyTimes) * rpiMult).toFixed(0)} ms  (online proxy per BSM)`);
+    }
     console.log("\nRun  npm run bench-batch  for batch verification numbers.");
 }
 
