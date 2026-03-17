@@ -1,0 +1,21 @@
+{
+  "hardware": "Raspberry Pi 4 Model B Rev 1.2",
+  "curve": "BN254 (bn128)",
+  "nWarmup": 5,
+  "nRuns": 20,
+  "timestamp": "2026-03-17T15:32:33.408Z",
+  "fullPairing": {
+    "mean_ms": 22.511825650000002,
+    "std_ms": 0.1735878323260013
+  },
+  "millerLoop": {
+    "mean_ms": 7.5072404500000065,
+    "std_ms": 0.02831820894663818
+  },
+  "finalExponentiation": {
+    "mean_ms": 11.949744150000015,
+    "std_ms": 0.04451766628910445
+  },
+  "finalExpPercent": 61.4,
+  "millerPercent": 38.6
+}

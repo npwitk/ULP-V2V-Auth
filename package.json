@@ -10,6 +10,8 @@
     "bench-batch": "node benchmark/bench_batch_verify.js",
     "bench-pairing": "node benchmark/bench_pairing_breakdown.js",
     "bench-poseidon": "node benchmark/bench_poseidon.js",
+    "bench-rapid": "node benchmark/bench_rapidsnark.js",
+    "install-rapidsnark": "bash scripts/install_rapidsnark.sh",
     "plot": "python3 benchmark/plot_results.py",
     "demo": "node demo/server.js"
   },
