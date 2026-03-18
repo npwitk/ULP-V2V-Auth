@@ -11,6 +11,12 @@
     "bench-pairing": "node benchmark/bench_pairing_breakdown.js",
     "bench-poseidon": "node benchmark/bench_poseidon.js",
     "bench-rapid": "node benchmark/bench_rapidsnark.js",
+    "bench-ecdsa": "node benchmark/bench_ecdsa_baseline.js",
+    "bench-e2e": "node obu/bench_e2e.js",
+    "ta-server": "node server/ta_server.js",
+    "ais-server": "node server/ais_server.js --ta=http://127.0.0.1:3001",
+    "register": "node obu/register.js",
+    "acquire": "node obu/acquire_ast.js",
     "install-rapidsnark": "bash scripts/install_rapidsnark.sh",
     "plot": "python3 benchmark/plot_results.py",
     "demo": "node demo/server.js"

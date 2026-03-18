@@ -11,3 +11,5 @@ results/*.png
 *.swp
 /.claude
 /TeX
+/latex
+/rpi_results
