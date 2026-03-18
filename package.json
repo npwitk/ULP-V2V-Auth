@@ -12,6 +12,7 @@
     "bench-poseidon": "node benchmark/bench_poseidon.js",
     "bench-rapid": "node benchmark/bench_rapidsnark.js",
     "bench-ecdsa": "node benchmark/bench_ecdsa_baseline.js",
+    "bench-cache": "node benchmark/bench_proof_cache.js",
     "bench-e2e": "node obu/bench_e2e.js",
     "ta-server": "node server/ta_server.js",
     "ais-server": "node server/ais_server.js --ta=http://127.0.0.1:3001",
