@@ -15,8 +15,8 @@ const path = require("path");
 // -------------------------------------------------------
 // Configuration
 // -------------------------------------------------------
-const DEPTH      = 8;           // must match circuit parameter
-const NUM_LEAVES = 1 << DEPTH;  // 256
+const DEPTH      = 16;          // must match circuit parameter
+const NUM_LEAVES = 1 << DEPTH;  // 65536
 const LEAF_INDEX = 3;           // which leaf is "our" AST
 
 // -------------------------------------------------------

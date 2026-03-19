@@ -125,6 +125,5 @@ template ULP_V2V_Auth(depth) {
     msgHasher.out === hMessage;
 }
 
-// depth=8 → 256 leaves, ~2600 constraints, fits in pot12 (~128 MB setup)
-// For RPi benchmarks with depth=16, change to ULP_V2V_Auth(16) and use pot13
-component main {public [merkleRoot, tCurrent, hMessage]} = ULP_V2V_Auth(8);
+// depth=16 → 65536 leaves, ~9000-10000 constraints, requires pot14
+component main {public [merkleRoot, tCurrent, hMessage]} = ULP_V2V_Auth(16);

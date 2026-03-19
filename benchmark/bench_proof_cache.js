@@ -12,9 +12,9 @@
  *
  *   ONLINE (per BSM at 10 Hz, 100 ms cycle):
  *     1. Dequeue the next pre-generated slot          ≈ 0.00 ms
- *     2. h_m = Poseidon(pre-committed message, t)     = 0.377 ms
+ *     2. h_m = Poseidon(pre-committed message, t)     = ~0.41 ms (measured)
  *     3. Broadcast (proof, h_m, BSM payload)          ≈ 0.00 ms
- *     Total online cost per BSM:                      = 0.377 ms
+ *     Total online cost per BSM:                      = ~0.41 ms
  *
  *   LIMITATION:
  *     BSM payload content (position, velocity) must be committed at
@@ -353,7 +353,7 @@ async function main() {
     // -------------------------------------------------------
     const results = {
         hardware          : hw,
-        circuit           : "ULP_V2V_Auth(depth=8)",
+        circuit           : "ULP_V2V_Auth(depth=16)",
         prover            : proverLabel,
         nSlots            : N_SLOTS,
         nPoseidon         : N_POSEIDON,

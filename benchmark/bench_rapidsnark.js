@@ -228,7 +228,7 @@ async function main() {
     // -------------------------------------------------------
     const results = {
         hardware            : hw,
-        circuit             : "ULP_V2V_Auth(depth=8)",
+        circuit             : "ULP_V2V_Auth(depth=16)",
         rapidsnarkBinary    : rapidsnarkBin,
         nWarmup             : N_WARMUP,
         nRuns               : N_RUNS,

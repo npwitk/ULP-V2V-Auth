@@ -2,11 +2,11 @@
 # =============================================================================
 # setup.sh — One-time trusted setup for ULP-V2V-Auth
 #
-# Circuit has ~5586 constraints → requires pot13 (2^13 = 8192 max).
+# Circuit has ~9000-10000 constraints (depth-16) → requires pot14 (2^14 = 16384 max).
 # We generate the Powers of Tau locally — no external downloads needed.
 #
-# Runtime:   ~5–10 min on Apple Silicon
-# Disk use:  ~50 MB
+# Runtime:   ~10–20 min on Apple Silicon, ~30–60 min on RPi 4
+# Disk use:  ~100 MB
 # =============================================================================
 
 set -euo pipefail
@@ -15,7 +15,7 @@ CIRCUIT_NAME="ulp_v2v_auth"
 BUILD_DIR="./build"
 KEYS_DIR="./keys"
 CIRCUIT_FILE="circuits/${CIRCUIT_NAME}.circom"
-PTAU_FILE="${BUILD_DIR}/pot13_final.ptau"
+PTAU_FILE="${BUILD_DIR}/pot14_final.ptau"
 
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -41,28 +41,28 @@ ok "Circuit compiled → ${BUILD_DIR}/${CIRCUIT_NAME}.r1cs"
 npx snarkjs r1cs info "${BUILD_DIR}/${CIRCUIT_NAME}.r1cs"
 
 # ================================================================
-# Step 2: Powers of Tau — pot13 (supports up to 8192 constraints)
+# Step 2: Powers of Tau — pot14 (supports up to 16384 constraints)
 # ================================================================
 if [ -f "$PTAU_FILE" ]; then
-    ok "pot13 already exists, skipping generation."
+    ok "pot14 already exists, skipping generation."
 else
-    log "Step 2/5 — Generating Powers of Tau pot13 locally (~5 min)..."
+    log "Step 2/5 — Generating Powers of Tau pot14 locally (~15 min on RPi 4)..."
     warn "No download needed — local generation is valid for research prototypes."
 
-    npx snarkjs powersoftau new bn128 13 \
-      "${BUILD_DIR}/pot13_0000.ptau" -v
+    npx snarkjs powersoftau new bn128 14 \
+      "${BUILD_DIR}/pot14_0000.ptau" -v
 
     npx snarkjs powersoftau contribute \
-      "${BUILD_DIR}/pot13_0000.ptau" \
-      "${BUILD_DIR}/pot13_0001.ptau" \
+      "${BUILD_DIR}/pot14_0000.ptau" \
+      "${BUILD_DIR}/pot14_0001.ptau" \
       --name="ULP-V2V-Auth-Phase1" -v \
       -e="$(openssl rand -hex 64)"
 
     npx snarkjs powersoftau prepare phase2 \
-      "${BUILD_DIR}/pot13_0001.ptau" \
+      "${BUILD_DIR}/pot14_0001.ptau" \
       "$PTAU_FILE" -v
 
-    rm "${BUILD_DIR}/pot13_0000.ptau" "${BUILD_DIR}/pot13_0001.ptau"
+    rm "${BUILD_DIR}/pot14_0000.ptau" "${BUILD_DIR}/pot14_0001.ptau"
     ok "Powers of Tau ready → $PTAU_FILE"
 fi
 

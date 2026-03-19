@@ -136,7 +136,7 @@ async function main() {
     fs.mkdirSync("results", { recursive: true });
     const results = {
         hardware    : detectHardware(),
-        circuit     : "ULP_V2V_Auth(depth=8)",
+        circuit     : "ULP_V2V_Auth(depth=16)",
         nWarmup     : N_WARMUP,
         nRuns       : N_RUNS,
         timestamp   : new Date().toISOString(),
