@@ -1,0 +1,81 @@
+{
+  "hardware": "Raspberry Pi 4 Model B Rev 1.2",
+  "circuit": "ULP_V2V_Auth(depth=16)",
+  "prover": "rapidsnark",
+  "nSlots": 5,
+  "nPoseidon": 2000,
+  "bsmHz": 10,
+  "timestamp": "2026-03-19T13:46:12.748Z",
+  "slotGeneration": {
+    "mean_ms": 1422.047,
+    "std_ms": 44.016,
+    "productionRate": 42.19
+  },
+  "onlineCost": {
+    "dequeue_ms": 0.002348,
+    "poseidon_ms": 0.437091,
+    "poseidonStd_ms": 0.025266,
+    "total_ms": 0.439439,
+    "pctOfBsmCycle": 0.4394
+  },
+  "cacheLifetime": [
+    {
+      "cacheSize": 10,
+      "drainTime_s": 1.08
+    },
+    {
+      "cacheSize": 60,
+      "drainTime_s": 6.45
+    },
+    {
+      "cacheSize": 300,
+      "drainTime_s": 32.27
+    },
+    {
+      "cacheSize": 600,
+      "drainTime_s": 64.54
+    },
+    {
+      "cacheSize": 1800,
+      "drainTime_s": 193.62
+    }
+  ],
+  "stopDriveModel": [
+    {
+      "driveTime_min": 0.5,
+      "slotsNeeded": 279,
+      "stopNeeded_min": 6.61,
+      "stopDriveRatio": 13.23
+    },
+    {
+      "driveTime_min": 1,
+      "slotsNeeded": 558,
+      "stopNeeded_min": 13.23,
+      "stopDriveRatio": 13.23
+    },
+    {
+      "driveTime_min": 2,
+      "slotsNeeded": 1116,
+      "stopNeeded_min": 26.45,
+      "stopDriveRatio": 13.23
+    },
+    {
+      "driveTime_min": 5,
+      "slotsNeeded": 2790,
+      "stopNeeded_min": 66.13,
+      "stopDriveRatio": 13.23
+    },
+    {
+      "driveTime_min": 10,
+      "slotsNeeded": 5579,
+      "stopNeeded_min": 132.23,
+      "stopDriveRatio": 13.22
+    }
+  ],
+  "breakEven": {
+    "targetSlotTime_ms": 100,
+    "requiredSpeedup": 14.22
+  },
+  "consumptionRate": 600,
+  "netDrainRate": 557.81
+}

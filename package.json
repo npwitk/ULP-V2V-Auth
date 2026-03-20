@@ -13,6 +13,7 @@
     "bench-rapid": "node benchmark/bench_rapidsnark.js",
     "bench-ecdsa": "node benchmark/bench_ecdsa_baseline.js",
     "bench-cache": "node benchmark/bench_proof_cache.js",
+    "bench-primitives": "node benchmark/bench_primitives.js",
     "bench-e2e": "node obu/bench_e2e.js",
     "ta-server": "node server/ta_server.js",
     "ais-server": "node server/ais_server.js --ta=http://127.0.0.1:3001",

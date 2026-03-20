@@ -1,0 +1,27 @@
+{
+  "hardware": "Raspberry Pi 4 Model B Rev 1.2",
+  "circuit": "ULP_V2V_Auth(depth=16)",
+  "rapidsnarkBinary": "/usr/local/bin/prover",
+  "nWarmup": 3,
+  "nRuns": 10,
+  "timestamp": "2026-03-19T13:45:44.481Z",
+  "proofValid": true,
+  "snarkjsFullProve": {
+    "mean_ms": 4049.556351899998,
+    "std_ms": 78.46087981893488
+  },
+  "witnessGeneration": {
+    "mean_ms": 374.02573039999913,
+    "std_ms": 7.413552206705303
+  },
+  "rapidsnarkProver": {
+    "mean_ms": 1378.8857079000002,
+    "std_ms": 66.70889704838778
+  },
+  "rapidsnarkTotal": {
+    "mean_ms": 1752.9114382999992
+  },
+  "speedupFullProve": 2.31,
+  "speedupProverOnly": 2.666,
+  "onlineEstimate_ms": 75.38
+}
