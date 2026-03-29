@@ -142,7 +142,7 @@ run_bench() {
     node --input-type=module - \
         "$DEPTH" "$WASM" "$ZKEY" "$INPUT" \
         "$RAPIDSNARK" "$N_WARMUP" "$N_RUNS" "$CONSTRAINTS" "$OUT" << 'EOF'
-import snarkjs from "snarkjs";
+import * as snarkjs from "snarkjs";
 import { execFileSync } from "child_process";
 import fs from "fs";
 import os from "os";
