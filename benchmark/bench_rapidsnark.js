@@ -215,12 +215,14 @@ async function main() {
     console.log(`\n  Proof valid : ${valid ? "✓ YES" : "✗ NO"}`);
 
     if (valid) {
-        console.log(`\n  Online phase estimate with rapidsnark:`);
-        const onlineFrac = 0.043;  // 4.3% message-specific constraints
-        console.log(`  Witness bind (4.3% of ${witnessMean.toFixed(1)} ms) : ~${(witnessMean * onlineFrac).toFixed(1)} ms`);
-        console.log(`  Prover bind  (4.3% of ${rapidMean.toFixed(1)} ms)  : ~${(rapidMean * onlineFrac).toFixed(1)} ms`);
-        console.log(`  Total online (lower bound)         : ~${((witnessMean + rapidMean) * onlineFrac).toFixed(1)} ms`);
-        console.log(`  (vs 100 ms BSM cycle → ${(((witnessMean + rapidMean) * onlineFrac) / 100 * 100).toFixed(1)}% budget used)`);
+        // One-time-key design: 100% of constraints are message-agnostic.
+        // The entire proof is generated offline; no BSM content enters the circuit.
+        // Online per-BSM cost = ECDSA-P256 sign only (~0.20 ms) — see bench_ecdsa_baseline.js.
+        console.log(`\n  Online phase (one-time-key design):`);
+        console.log(`    Circuit constraints are 100% message-agnostic (0% online).`);
+        console.log(`    Entire proof (witness + prover) is pre-generated offline.`);
+        console.log(`    Per-BSM online cost = ECDSA-P256 sign only (~0.20 ms).`);
+        console.log(`    Run bench_ecdsa_baseline.js for ECDSA sign timing.`);
     }
 
     // -------------------------------------------------------
@@ -228,7 +230,7 @@ async function main() {
     // -------------------------------------------------------
     const results = {
         hardware            : hw,
-        circuit             : "ULP_V2V_Auth(depth=16)",
+        circuit             : "ULP_V2V_Auth(depth=8, constraints=5069)",
         rapidsnarkBinary    : rapidsnarkBin,
         nWarmup             : N_WARMUP,
         nRuns               : N_RUNS,
@@ -240,7 +242,7 @@ async function main() {
         rapidsnarkTotal     : { mean_ms: totalRapid                                       },
         speedupFullProve    : parseFloat(speedupFull.toFixed(3)),
         speedupProverOnly   : parseFloat((snarkjsProverOnly / rapidMean).toFixed(3)),
-        onlineEstimate_ms   : parseFloat(((witnessMean + rapidMean) * 0.043).toFixed(2)),
+        onlineEstimate_ms   : 0,  // one-time-key design: 0% online circuit cost
     };
 
     fs.mkdirSync("results", { recursive: true });

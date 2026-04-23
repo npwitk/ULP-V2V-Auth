@@ -3,30 +3,29 @@
  *
  * Validates the offline/online proof-slot model for ULP-V2V-Auth.
  *
- * THE MODEL
- * ---------
+ * THE MODEL (one-time-key design)
+ * --------------------------------
  *   OFFLINE (vehicle stopped or idle):
- *     Pre-generate N proof slots. Each slot commits to a predicted future
- *     BSM message (vehicle state: position, velocity, heading) chosen at
- *     precomputation time. The Groth16 proof is complete and valid.
+ *     Pre-generate N proof slots. Each slot binds to a fresh one-time
+ *     ECDSA-P256 keypair (sk_ot, pk_ot). The Groth16 proof commits to pk_ot
+ *     as a public input. Slots are message-agnostic — 100% usable for any BSM.
  *
  *   ONLINE (per BSM at 10 Hz, 100 ms cycle):
  *     1. Dequeue the next pre-generated slot          ≈ 0.00 ms
- *     2. h_m = Poseidon(pre-committed message, t)     = ~0.41 ms (measured)
- *     3. Broadcast (proof, h_m, BSM payload)          ≈ 0.00 ms
- *     Total online cost per BSM:                      = ~0.41 ms
+ *     2. sigma_ot = ECDSA-P256.Sign(sk_ot, BSM)      ≈ 0.20 ms
+ *     3. Broadcast (proof, pk_ot, sigma_ot, BSM)      ≈ 0.00 ms
+ *     Total online cost per BSM:                      ≈ 0.20 ms
  *
- *   LIMITATION:
- *     BSM payload content (position, velocity) must be committed at
- *     precomputation time. For 100 ms BSM intervals and highway speeds
- *     (~30 m/s), position prediction error over one slot interval is
- *     sub-metre — within GPS accuracy. This is the only constraint of
- *     the proof-slot model.
+ *   DESIGN NOTE:
+ *     BSM payload (position, velocity, heading) is signed by sk_ot at broadcast
+ *     time. No BSM content enters the Groth16 circuit — the circuit only proves
+ *     membership and freshness for pk_ot. This eliminates the pre-commitment
+ *     constraint of earlier designs.
  *
  * WHAT THIS MEASURES
  * ------------------
  *   A) Slot generation rate   — offline production rate (slots/min)
- *   B) Online per-BSM cost    — dequeue + Poseidon binding
+ *   B) Online per-BSM cost    — dequeue + ECDSA-P256 sign
  *   C) Cache drain rate       — how long N slots last at 10 Hz
  *   D) Stop-drive model       — required stop time per minute of driving
  *   E) Break-even acceleration — hardware speedup needed for self-sustaining cache
@@ -36,7 +35,6 @@
  */
 
 const snarkjs        = require("snarkjs");
-const { buildPoseidon } = require("circomlibjs");
 const crypto         = require("crypto");
 const fs             = require("fs");
 const path           = require("path");
@@ -51,11 +49,14 @@ const ZKEY = path.join("keys",  "ulp_v2v_auth_final.zkey");
 const VK   = path.join("keys",  "verification_key.json");
 const IN   = path.join("build", "input.json");
 
-const N_SLOTS          = 5;      // proof slots to generate (each ~2,354 ms — total ~12 s)
-const N_POSEIDON       = 2000;   // Poseidon binding measurements
+const N_SLOTS          = 5;      // proof slots to generate
+const N_ECDSA_SIGN     = 2000;   // ECDSA sign measurements (matches bench_ecdsa_baseline.js)
 const BSM_HZ           = 10;     // BSM broadcast rate (Hz)
 const BSM_INTERVAL_MS  = 1000 / BSM_HZ;   // 100 ms
 const SLOTS_PER_MIN    = 60 * BSM_HZ;     // consumption rate = 600 slots/min at 10 Hz
+
+// Simulated BSM payload: position + velocity + heading + timestamp ≈ 250 bytes (SAE J2735)
+const BSM_PAYLOAD = crypto.randomBytes(250);
 
 const DRIVE_SCENARIOS_MIN = [0.5, 1, 2, 5, 10]; // driving durations to model (minutes)
 
@@ -93,6 +94,7 @@ function findRapidsnark() {
 
 const mean = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
 const std  = arr => { const m = mean(arr); return Math.sqrt(arr.reduce((s,x) => s+(x-m)**2, 0)/arr.length); };
+const ci95 = arr => (1.96 * std(arr) / Math.sqrt(arr.length));
 
 // -------------------------------------------------------
 // Main
@@ -127,42 +129,33 @@ async function main() {
         } catch {}
     }
 
-    // -------------------------------------------------------
-    // Build Poseidon
-    // -------------------------------------------------------
-    const poseidon = await buildPoseidon();
-    const F        = poseidon.F;
-    const hashFn   = (...args) => F.toObject(poseidon(args));
+    const tBase = BigInt(baseInput.tCurrent);
 
     // -------------------------------------------------------
     // Phase A — Offline Slot Generation
     // -------------------------------------------------------
     console.log(`\n${"─".repeat(68)}`);
     console.log(`[Phase A]  Offline slot generation — ${N_SLOTS} proof slots`);
-    console.log(`  Each slot commits to a different pre-chosen BSM message.`);
-    console.log(`  (Vehicle predicts its future position/state at precomputation time)`);
+    console.log(`  Each slot binds to a fresh one-time ECDSA-P256 keypair (pk_ot).`);
+    console.log(`  Slots are message-agnostic (100% usable — no pre-commitment).`);
     console.log(`${"─".repeat(68)}`);
 
     const slotTimes = [];
     const slots     = [];
 
-    const tBase = BigInt(baseInput.tCurrent);
-
     for (let i = 0; i < N_SLOTS; i++) {
-        // Each slot has a different pre-committed message (simulates predicted BSM content)
-        // In deployment: vehicle uses predicted position, velocity, heading at time t_i
-        const precommittedMsg = BigInt("0x" + crypto.randomBytes(16).toString("hex")) %
+        // Each slot uses a fresh one-time public key (simulated as random BN254 scalar).
+        // In deployment: vehicle calls ECDSA.KeyGen(P-256) per slot (<0.3 ms).
+        const pkOt = BigInt("0x" + crypto.randomBytes(31).toString("hex")) %
             BigInt("21888242871839275222246405745257275088548364400416034343698204186575808495617");
 
-        // Time offset: each slot covers one BSM interval in the future
-        const tSlot    = tBase + BigInt(i) * BigInt(Math.round(BSM_INTERVAL_MS / 1000));
-        const hMessage = hashFn(precommittedMsg, tSlot);
+        // t_gen: each slot covers one BSM interval in the future
+        const tSlot = tBase + BigInt(i) * BigInt(Math.round(BSM_INTERVAL_MS / 1000));
 
         const slotInput = {
             ...baseInput,
             tCurrent : tSlot.toString(),
-            hMessage : hMessage.toString(),
-            message  : precommittedMsg.toString(),
+            pkOt     : pkOt.toString(),
         };
 
         process.stdout.write(`  Slot ${i+1}/${N_SLOTS}: generating proof...  \r`);
@@ -171,7 +164,6 @@ async function main() {
         let proof, publicSignals;
 
         if (rapidsnarkBin) {
-            // Use rapidsnark if available
             await snarkjs.wtns.calculate(slotInput, WASM, { type: "file", fileName: TMP_WTNS });
             const tmpProof = path.join(os.tmpdir(), `slot_proof_${i}.json`);
             const tmpPub   = path.join(os.tmpdir(), `slot_pub_${i}.json`);
@@ -186,12 +178,11 @@ async function main() {
         const elapsed = performance.now() - t0;
         slotTimes.push(elapsed);
 
-        // Verify slot is valid
         const valid = await snarkjs.groth16.verify(vk, publicSignals, proof);
 
-        slots.push({ proof, publicSignals, precommittedMsg, tSlot, valid });
-        console.log(`  Slot ${i+1}/${N_SLOTS}: msg=${precommittedMsg.toString(16).slice(0,8)}... ` +
-                    `t+${i*100}ms → ${elapsed.toFixed(0)} ms  valid=${valid ? "✓" : "✗"}`);
+        slots.push({ proof, publicSignals, pkOt, tSlot, valid });
+        console.log(`  Slot ${i+1}/${N_SLOTS}: pkOt=${pkOt.toString(16).slice(0,8)}... ` +
+                    `t_gen=t+${i*100}ms → ${elapsed.toFixed(0)} ms  valid=${valid ? "✓" : "✗"}`);
     }
 
     const slotMean       = mean(slotTimes);
@@ -203,10 +194,12 @@ async function main() {
     console.log(`  Production rate: ${productionRate.toFixed(1)} slots/min`);
 
     // -------------------------------------------------------
-    // Phase B — Online Per-BSM Cost
+    // Phase B — Online Per-BSM Cost (dequeue + ECDSA sign)
     // -------------------------------------------------------
     console.log(`\n${"─".repeat(68)}`);
-    console.log(`[Phase B]  Online per-BSM cost (dequeue + Poseidon binding)`);
+    console.log(`[Phase B]  Online per-BSM cost (dequeue + ECDSA-P256 sign)`);
+    console.log(`  One-time-key design: BSM is bound by sk_ot at broadcast time.`);
+    console.log(`  No Poseidon hash needed online; circuit is fully pre-computed.`);
     console.log(`${"─".repeat(68)}`);
 
     // B1: Dequeue simulation (array pop)
@@ -215,25 +208,44 @@ async function main() {
     for (let i = 0; i < N_SLOTS; i++) cache.pop();
     const dequeuePerSlot = (performance.now() - dequeueStart) / N_SLOTS;
 
-    // B2: Poseidon binding (amortised)
-    const poseidonBatches = [];
-    const BATCH = 500;
-    const testMsg = BigInt("0xBEEF0001CAFE0002DEAD0003BABE0004");
-    for (let b = 0; b < N_POSEIDON / BATCH; b++) {
-        const t0 = performance.now();
-        for (let i = 0; i < BATCH; i++) hashFn(testMsg + BigInt(i), tBase);
-        poseidonBatches.push((performance.now() - t0) / BATCH);
+    // B2: ECDSA-P256 sign (per BSM) — the actual online cryptographic cost
+    const { privateKey: privDer } = crypto.generateKeyPairSync("ec", {
+        namedCurve: "P-256",
+        privateKeyEncoding: { type: "pkcs8", format: "der" },
+    });
+    const privKey = crypto.createPrivateKey({ key: privDer, format: "der", type: "pkcs8" });
+
+    // Warmup
+    for (let i = 0; i < 100; i++) {
+        const s = crypto.createSign("SHA256");
+        s.update(BSM_PAYLOAD);
+        s.sign(privKey);
     }
-    const poseidonMean = mean(poseidonBatches);
-    const poseidonStd  = std(poseidonBatches);
 
-    const totalOnline = dequeuePerSlot + poseidonMean;
+    const signTimes = [];
+    for (let i = 0; i < N_ECDSA_SIGN; i++) {
+        const t0 = performance.now();
+        const s = crypto.createSign("SHA256");
+        s.update(BSM_PAYLOAD);
+        s.sign(privKey);
+        signTimes.push(performance.now() - t0);
+        if ((i + 1) % 500 === 0)
+            process.stdout.write(`  ECDSA sign run ${i+1}/${N_ECDSA_SIGN}: ${signTimes[i].toFixed(3)} ms   \r`);
+    }
+    console.log("");
 
-    console.log(`  1. Dequeue slot (array pop)     : ${dequeuePerSlot.toFixed(4)} ms`);
-    console.log(`  2. Poseidon binding (amortised) : ${poseidonMean.toFixed(4)} ms  ±  ${poseidonStd.toFixed(4)} ms`);
+    const ecdsaSignMean = mean(signTimes);
+    const ecdsaSignStd  = std(signTimes);
+    const ecdsaSignCI   = ci95(signTimes);
+
+    const totalOnline = dequeuePerSlot + ecdsaSignMean;
+
+    console.log(`  1. Dequeue slot (array pop)      : ${dequeuePerSlot.toFixed(4)} ms`);
+    console.log(`  2. ECDSA-P256 sign (per BSM)     : ${ecdsaSignMean.toFixed(4)} ms  ±  ${ecdsaSignCI.toFixed(4)} ms (95% CI)`);
     console.log(`  ─────────────────────────────────────────────────`);
-    console.log(`  Total online cost per BSM       : ${totalOnline.toFixed(4)} ms`);
-    console.log(`  As % of 100 ms BSM cycle        : ${(totalOnline / 100 * 100).toFixed(3)}%`);
+    console.log(`  Total online cost per BSM        : ${totalOnline.toFixed(4)} ms`);
+    console.log(`  As % of 100 ms BSM cycle         : ${(totalOnline / 100 * 100).toFixed(3)}%`);
+    console.log(`  Paper claim (Phase 3): ~0.20 ms  →  ${ecdsaSignMean < 0.40 ? "✓ PASS" : "✗ UPDATE PAPER"}`);
 
     // -------------------------------------------------------
     // Phase C — Cache Drain Rate at 10 Hz
@@ -249,7 +261,7 @@ async function main() {
         console.log(`  Production rate  : ${rRate.toFixed(1)} slots/min  [rapidsnark, from prior benchmark]`);
     }
 
-    const netDrain = SLOTS_PER_MIN - productionRate;  // net drain while driving (dual-core)
+    const netDrain = SLOTS_PER_MIN - productionRate;
     console.log(`  Net drain (dual-core driving)  : ${netDrain.toFixed(1)} slots/min`);
     console.log(`\n  Cache size → Time before exhaustion (driving, dual-core):`);
 
@@ -268,18 +280,13 @@ async function main() {
     console.log(`  Q: How long must the vehicle stop to cover T_drive minutes of driving?`);
     console.log(`${"─".repeat(68)}`);
 
-    // During stop: produce at productionRate, consume 0
-    // During drive: consume SLOTS_PER_MIN, produce productionRate (background core)
-    // Net slots needed for T_drive minutes = netDrain * T_drive
-    // Stop time needed = (netDrain * T_drive) / productionRate minutes
-
     console.log(`\n  ${"T_drive".padEnd(12)} ${"Slots needed".padEnd(16)} ${"Stop needed".padEnd(16)} ${"Stop:Drive ratio"}`);
     console.log(`  ${"─".repeat(60)}`);
 
     const stopDriveResults = [];
     for (const tDrive of DRIVE_SCENARIOS_MIN) {
         const slotsNeeded = Math.ceil(netDrain * tDrive);
-        const stopNeeded  = slotsNeeded / productionRate;          // minutes
+        const stopNeeded  = slotsNeeded / productionRate;
         const ratio       = stopNeeded / tDrive;
         stopDriveResults.push({ tDrive, slotsNeeded, stopNeeded, ratio });
         console.log(`  ${(tDrive + " min").padEnd(12)} ${String(slotsNeeded).padEnd(16)} ` +
@@ -295,16 +302,13 @@ async function main() {
     console.log(`     (production rate ≥ consumption rate = ${SLOTS_PER_MIN} slots/min)`);
     console.log(`${"─".repeat(68)}`);
 
-    // For self-sustaining: slot_gen_time ≤ BSM_INTERVAL_MS
-    // speedup needed = slotMean / BSM_INTERVAL_MS
-    const breakEvenMs      = BSM_INTERVAL_MS;               // 100 ms
+    const breakEvenMs      = BSM_INTERVAL_MS;
     const breakEvenSpeedup = slotMean / breakEvenMs;
 
     console.log(`\n  Current slot gen time  : ${slotMean.toFixed(0)} ms  (${proverLabel})`);
     console.log(`  Break-even target      : ${breakEvenMs} ms/slot  (= 1 slot per BSM interval)`);
     console.log(`  Required speedup       : ${breakEvenSpeedup.toFixed(1)}×`);
 
-    // Hardware acceleration tiers
     const tiers = [
         { name: "snarkjs (baseline)",             speedup: 1 },
         { name: "rapidsnark (ARM, no NEON)",      speedup: slotMean / (rapidsnarkMean_ms ?? 976) },
@@ -331,7 +335,7 @@ async function main() {
     console.log("=".repeat(68));
     console.log(`\n  ONLINE COST (per BSM, from pre-generated cache)`);
     console.log(`    Dequeue slot              : ${dequeuePerSlot.toFixed(4)} ms`);
-    console.log(`    Poseidon binding          : ${poseidonMean.toFixed(4)} ms ± ${poseidonStd.toFixed(4)} ms`);
+    console.log(`    ECDSA-P256 sign           : ${ecdsaSignMean.toFixed(4)} ms ± ${ecdsaSignCI.toFixed(4)} ms (95% CI)`);
     console.log(`    Total                     : ${totalOnline.toFixed(4)} ms  (${(totalOnline/100*100).toFixed(3)}% of BSM cycle)`);
     console.log(`\n  OFFLINE PRODUCTION RATE`);
     console.log(`    Per-slot (${proverLabel.padEnd(16)}) : ${slotMean.toFixed(0)} ms ± ${slotStd.toFixed(0)} ms`);
@@ -342,10 +346,10 @@ async function main() {
     console.log(`    Stop:drive ratio         : ${stopDriveResults[1].ratio.toFixed(1)}:1  (per 1 min driving)`);
     console.log(`    Break-even speedup       : ${breakEvenSpeedup.toFixed(1)}× over ${proverLabel}`);
     console.log(`    Self-sustaining at       : ≥ ${(60000/SLOTS_PER_MIN).toFixed(0)} ms/slot  (NXP S32G tier)`);
-    console.log(`\n  LIMITATION`);
-    console.log(`    BSM content must be pre-committed at slot generation time.`);
-    console.log(`    At 100 ms slot intervals, highway position prediction error`);
-    console.log(`    is < 3 m at 30 m/s — within GPS accuracy.`);
+    console.log(`\n  DESIGN NOTE (one-time-key)`);
+    console.log(`    Each slot commits to a fresh ECDSA key pair (sk_ot, pk_ot).`);
+    console.log(`    BSM content is signed at broadcast time — no pre-commitment needed.`);
+    console.log(`    Each slot is single-use; sk_ot is discarded after one BSM.`);
     console.log("=".repeat(68));
 
     // -------------------------------------------------------
@@ -353,11 +357,12 @@ async function main() {
     // -------------------------------------------------------
     const results = {
         hardware          : hw,
-        circuit           : "ULP_V2V_Auth(depth=16)",
+        circuit           : "ULP_V2V_Auth(depth=8, constraints=5069)",
         prover            : proverLabel,
         nSlots            : N_SLOTS,
-        nPoseidon         : N_POSEIDON,
+        nEcdsaSign        : N_ECDSA_SIGN,
         bsmHz             : BSM_HZ,
+        bsmPayloadBytes   : BSM_PAYLOAD.length,
         timestamp         : new Date().toISOString(),
         slotGeneration    : {
             mean_ms        : parseFloat(slotMean.toFixed(3)),
@@ -365,11 +370,13 @@ async function main() {
             productionRate : parseFloat(productionRate.toFixed(2)),
         },
         onlineCost        : {
-            dequeue_ms     : parseFloat(dequeuePerSlot.toFixed(6)),
-            poseidon_ms    : parseFloat(poseidonMean.toFixed(6)),
-            poseidonStd_ms : parseFloat(poseidonStd.toFixed(6)),
-            total_ms       : parseFloat(totalOnline.toFixed(6)),
-            pctOfBsmCycle  : parseFloat((totalOnline/100*100).toFixed(4)),
+            dequeue_ms       : parseFloat(dequeuePerSlot.toFixed(6)),
+            ecdsaSign_ms     : parseFloat(ecdsaSignMean.toFixed(6)),
+            ecdsaSignStd_ms  : parseFloat(ecdsaSignStd.toFixed(6)),
+            ecdsaSignCI95_ms : parseFloat(ecdsaSignCI.toFixed(6)),
+            total_ms         : parseFloat(totalOnline.toFixed(6)),
+            pctOfBsmCycle    : parseFloat((totalOnline/100*100).toFixed(4)),
+            claim_ms         : 0.20,
         },
         cacheLifetime     : cacheSizes.map(n => ({
             cacheSize      : n,

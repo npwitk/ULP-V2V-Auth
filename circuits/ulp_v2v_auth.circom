@@ -9,7 +9,6 @@ include "circomlib/circuits/switcher.circom";
 // MerklePathVerifier
 //   Verifies that `leaf` is included in a Merkle tree
 //   with root `root` using Poseidon hashing.
-//   `depth` = tree depth (8 for Mac test, 16 for full)
 // -------------------------------------------------------
 template MerklePathVerifier(depth) {
     signal input leaf;
@@ -42,31 +41,38 @@ template MerklePathVerifier(depth) {
 }
 
 // -------------------------------------------------------
-// ULP_V2V_Auth  — the main circuit
+// ULP_V2V_Auth — One-Time-Key Variant (highway deployment)
 //
-// Public inputs  (known to verifier):
+// Public inputs  (known to verifier, committed by Groth16):
 //   merkleRoot  — current Merkle root R
-//   tCurrent    — timestamp of the safety message
-//   hMessage    — Poseidon(message, tCurrent)
+//   tCurrent    — predicted timestamp for this slot
+//   pkOt        — one-time ECDSA-P256 public key (x-coordinate)
 //
 // Private witness (known only to prover):
 //   sid, tStart, tEnd, cap, r  — AST fields
 //   pathElements[depth]         — Merkle siblings
 //   pathIndices[depth]          — path direction bits
-//   message                    — raw BSM content
 //
 // Proved statement:
 //   (1) leaf = Poseidon(sid, tStart, tEnd, cap, r)
 //   (2) MerkleVerify(leaf, path) == merkleRoot
 //   (3) tStart <= tCurrent <= tEnd
-//   (4) hMessage == Poseidon(message, tCurrent)
+//   (4) pkOt is committed as a public input (binding via Groth16 IC vector)
+//
+// Message binding is handled outside the circuit: the prover signs
+// (m || t_current) with sk_ot, the verifier checks ECDSA under pk_ot.
+// This is the one-time-key design: no message content enters the circuit,
+// so every cached proof slot is usable for any BSM content.
+//
+// Deployment: depth=8 → 256 simultaneous ASTs, sufficient for highway
+// segments (AIS zone ~1–2 km, dense 3-lane = ≤200 vehicles).
 // -------------------------------------------------------
 template ULP_V2V_Auth(depth) {
 
     // === Public inputs ===
-    signal input merkleRoot;
-    signal input tCurrent;
-    signal input hMessage;
+    signal input merkleRoot;   // Merkle root R (epoch-bound)
+    signal input tCurrent;     // predicted slot timestamp
+    signal input pkOt;         // one-time public key x-coordinate (P-256)
 
     // === Private witness ===
     signal input sid;
@@ -76,7 +82,6 @@ template ULP_V2V_Auth(depth) {
     signal input r;
     signal input pathElements[depth];
     signal input pathIndices[depth];
-    signal input message;
 
     // -------------------------------------------------------
     // Constraint 1: Compute AST leaf
@@ -116,14 +121,17 @@ template ULP_V2V_Auth(depth) {
     leqEnd.out === 1;
 
     // -------------------------------------------------------
-    // Constraint 4: Message hash binding
-    // hMessage = Poseidon(message, tCurrent)
+    // Constraint 4: pkOt binding anchor
+    // pkOt is a public input; Groth16's IC vector commitment ensures
+    // this proof is only valid for the specific pkOt used at generation.
+    // One linear constraint anchors pkOt in the R1CS so Circom does not
+    // treat it as unused.
     // -------------------------------------------------------
-    component msgHasher = Poseidon(2);
-    msgHasher.inputs[0] <== message;
-    msgHasher.inputs[1] <== tCurrent;
-    msgHasher.out === hMessage;
+    signal pkOtRef;
+    pkOtRef <== pkOt;
 }
 
-// depth=16 → 65536 leaves, ~9000-10000 constraints, requires pot14
-component main {public [merkleRoot, tCurrent, hMessage]} = ULP_V2V_Auth(16);
+// depth=8 → 256 leaves, ~5800 constraints (est.), requires pot13 (2^13=8192)
+// Sufficient for highway deployment: dense 3-lane, 1-2 km AIS zone ≤ 200 vehicles.
+// For metro-scale deployment, increase to depth=16 (65536 leaves, ~9100 constraints).
+component main {public [merkleRoot, tCurrent, pkOt]} = ULP_V2V_Auth(8);

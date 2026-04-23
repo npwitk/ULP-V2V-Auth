@@ -2,8 +2,12 @@
  * gen_input.js
  *
  * Builds a test Merkle tree of AST leaves using Poseidon hashing,
- * generates a valid Merkle inclusion proof for one leaf, computes
- * the public inputs, and writes everything to build/input.json.
+ * generates a valid Merkle inclusion proof for one leaf, and writes
+ * the circuit input (public + private signals) to build/input.json.
+ *
+ * Circuit: ULP_V2V_Auth(8) — one-time-key variant
+ * Public inputs: merkleRoot, tCurrent, pkOt
+ * Private witness: sid, tStart, tEnd, cap, r, pathElements, pathIndices
  *
  * Run:  node scripts/gen_input.js
  */
@@ -13,10 +17,10 @@ const fs = require("fs");
 const path = require("path");
 
 // -------------------------------------------------------
-// Configuration
+// Configuration — must match circuit parameter
 // -------------------------------------------------------
-const DEPTH      = 16;          // must match circuit parameter
-const NUM_LEAVES = 1 << DEPTH;  // 65536
+const DEPTH      = 8;           // depth-8 highway deployment circuit
+const NUM_LEAVES = 1 << DEPTH;  // 256 simultaneous AST slots
 const LEAF_INDEX = 3;           // which leaf is "our" AST
 
 // -------------------------------------------------------
@@ -33,8 +37,9 @@ const AST = {
 // Current timestamp within [tStart, tEnd]
 const T_CURRENT = BigInt(1700001400); // +23 min
 
-// Simulated BSM payload (in practice: hash of full BSM fields)
-const MESSAGE = BigInt("0xBEEF0001CAFE0002DEAD0003BABE0004");
+// One-time public key (x-coordinate of a P-256 point, simulated as random scalar)
+// In the real system, generated fresh per proof slot: ECDSA.KeyGen(P-256).
+const PK_OT = BigInt("0xA1B2C3D4E5F60718293A4B5C6D7E8F90A1B2C3D4E5F60718293A4B5C6D7E8F");
 
 
 async function main() {
@@ -54,15 +59,13 @@ async function main() {
     // -------------------------------------------------------
     // 2. Build the full Merkle tree (level 0 = leaves)
     // -------------------------------------------------------
-    // Populate all leaves — others are Poseidon(index) as placeholders
     const leaves = [];
     for (let i = 0; i < NUM_LEAVES; i++) {
         leaves.push(i === LEAF_INDEX
             ? ourLeaf
-            : hash(BigInt(i + 10000)));    // deterministic placeholder
+            : hash(BigInt(i + 10000)));
     }
 
-    // Build tree level by level upward
     const tree = [leaves.slice()];
     let currentLevel = leaves;
     while (currentLevel.length > 1) {
@@ -83,7 +86,7 @@ async function main() {
     const pathIndices  = [];
     let idx = LEAF_INDEX;
     for (let level = 0; level < DEPTH; level++) {
-        const isRight  = idx % 2;             // 1 if current node is right child
+        const isRight  = idx % 2;
         const sibIdx   = isRight ? idx - 1 : idx + 1;
         pathIndices.push(isRight);
         pathElements.push(tree[level][sibIdx]);
@@ -91,19 +94,15 @@ async function main() {
     }
 
     // -------------------------------------------------------
-    // 4. Compute public inputs
-    // -------------------------------------------------------
-    const hMessage = hash(MESSAGE, T_CURRENT);
-    console.log(`h_m = Poseidon(msg, t): ${hMessage.toString().slice(0,20)}...`);
-
-    // -------------------------------------------------------
-    // 5. Write input.json
+    // 4. Write input.json
+    //    Public inputs: merkleRoot, tCurrent, pkOt
+    //    Private witness: AST fields + Merkle path
     // -------------------------------------------------------
     const input = {
         // --- Public inputs (shared with verifier) ---
-        merkleRoot : merkleRoot.toString(),
-        tCurrent   : T_CURRENT.toString(),
-        hMessage   : hMessage.toString(),
+        merkleRoot   : merkleRoot.toString(),
+        tCurrent     : T_CURRENT.toString(),
+        pkOt         : PK_OT.toString(),
 
         // --- Private witness (stays with prover) ---
         sid          : AST.sid.toString(),
@@ -113,15 +112,14 @@ async function main() {
         r            : AST.r.toString(),
         pathElements : pathElements.map(x => x.toString()),
         pathIndices  : pathIndices.map(x => x.toString()),
-        message      : MESSAGE.toString(),
     };
 
     const outPath = path.join("build", "input.json");
     fs.mkdirSync("build", { recursive: true });
     fs.writeFileSync(outPath, JSON.stringify(input, null, 2));
     console.log(`\nInput written to ${outPath}`);
+    console.log(`  depth=${DEPTH}, ${NUM_LEAVES} leaves, public: (merkleRoot, tCurrent, pkOt)`);
 
-    // Also save tree metadata for inspection / debugging
     const metaPath = path.join("build", "tree_meta.json");
     fs.writeFileSync(metaPath, JSON.stringify({
         depth      : DEPTH,

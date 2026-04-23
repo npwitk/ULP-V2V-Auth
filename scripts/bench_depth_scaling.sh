@@ -16,8 +16,9 @@ set -euo pipefail
 
 # -------------------------------------------------------
 # Config — edit if needed
+# Depth 8 is the highway deployment target; 12/16 included for comparison.
 # -------------------------------------------------------
-DEPTHS=(8 12 14 16)
+DEPTHS=(8 12 16)
 N_WARMUP=3
 N_RUNS=20
 CIRCUIT_SRC="circuits/ulp_v2v_auth.circom"
@@ -76,7 +77,8 @@ const AST = {
     r:      BigInt("0xDEADBEEFCAFEBABE1234"),
 };
 const T_CURRENT = BigInt(1700001400);
-const MESSAGE   = BigInt("0xBEEF0001CAFE0002DEAD0003BABE0004");
+// One-time public key (x-coord of P-256 point, simulated)
+const PK_OT = BigInt("0xA1B2C3D4E5F60718293A4B5C6D7E8F90A1B2C3D4E5F60718293A4B5C6D7E8F");
 
 const poseidon = await buildPoseidon();
 const F = poseidon.F;
@@ -108,12 +110,10 @@ for (let l = 0; l < DEPTH; l++) {
     idx = Math.floor(idx / 2);
 }
 
-const hMessage = hash(MESSAGE, T_CURRENT);
-
 fs.writeFileSync(OUT, JSON.stringify({
     merkleRoot:   merkleRoot.toString(),
     tCurrent:     T_CURRENT.toString(),
-    hMessage:     hMessage.toString(),
+    pkOt:         PK_OT.toString(),
     sid:          AST.sid.toString(),
     tStart:       AST.tStart.toString(),
     tEnd:         AST.tEnd.toString(),
@@ -121,7 +121,6 @@ fs.writeFileSync(OUT, JSON.stringify({
     r:            AST.r.toString(),
     pathElements: pathElements.map(x => x.toString()),
     pathIndices:  pathIndices.map(x => x.toString()),
-    message:      MESSAGE.toString(),
 }, null, 2));
 console.log(`  Input written (depth=${DEPTH}, ${NUM_LEAVES} leaves) → ${OUT}`);
 EOF
@@ -214,7 +213,7 @@ for DEPTH in "${DEPTHS[@]}"; do
     # 1. Create depth-specific circom file
     # ------------------------------------------------------------------
     CIRC_TMP="$D_DIR/ulp_auth_d${DEPTH}.circom"
-    sed "s/component main.*= ULP_V2V_Auth([0-9]*);/component main {public [merkleRoot, tCurrent, hMessage]} = ULP_V2V_Auth(${DEPTH});/" \
+    sed "s/component main.*= ULP_V2V_Auth([0-9]*);/component main {public [merkleRoot, tCurrent, pkOt]} = ULP_V2V_Auth(${DEPTH});/" \
         "$CIRCUIT_SRC" > "$CIRC_TMP"
     log "Circuit: $CIRC_TMP"
 
@@ -236,10 +235,12 @@ for DEPTH in "${DEPTHS[@]}"; do
 
     # ------------------------------------------------------------------
     # 3. Select Powers of Tau
-    #    pot13 covers up to 8192 constraints (depth ≤ 12)
-    #    pot14 covers up to 16384 constraints (depth ≤ 16)
+    #    pot13 covers up to 8192 constraints (depth 8 one-time-key: ~5800 est.)
+    #    pot14 covers up to 16384 constraints (depth 12/16)
     # ------------------------------------------------------------------
-    if [ "$DEPTH" -le 12 ]; then
+    if [ "$DEPTH" -le 8 ]; then
+        POT="build/pot13_final.ptau"
+    elif [ "$DEPTH" -le 12 ]; then
         POT="build/pot13_final.ptau"
     else
         POT="build/pot14_final.ptau"

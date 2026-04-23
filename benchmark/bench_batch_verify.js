@@ -50,10 +50,9 @@ async function generateProofs(k, baseInput, poseidon) {
     const F = poseidon.F;
     const proofs = [];
     for (let i = 0; i < k; i++) {
-        const msg  = BigInt(baseInput.message) + BigInt(i + 1);
-        const tCur = BigInt(baseInput.tCurrent);
-        const hMsg = F.toObject(poseidon([msg, tCur]));
-        const inp  = { ...baseInput, message: msg.toString(), hMessage: hMsg.toString() };
+        // Each proof slot uses a fresh one-time public key (simulated by incrementing)
+        const pkOt = (BigInt(baseInput.pkOt) + BigInt(i + 1)).toString();
+        const inp  = { ...baseInput, pkOt };
         const { proof, publicSignals } = await snarkjs.groth16.fullProve(inp, WASM, ZKEY);
         proofs.push({ proof, publicSignals });
     }
