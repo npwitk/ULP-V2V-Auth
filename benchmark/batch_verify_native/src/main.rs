@@ -18,9 +18,10 @@
 //! Outputs:
 //!   ../../results/bench_batch_native.json
 
-use ark_bn254::{Bn254, Fr, Fq, Fq2, G1Affine, G1Projective, G2Affine, G2Prepared};
+use ark_bn254::{Bn254, Fr, Fq, Fq2, G1Affine, G1Projective, G2Affine};
 use ark_ec::{AffineRepr, CurveGroup, pairing::Pairing};
 use ark_ff::{PrimeField, Zero};
+type G2Prepared = <Bn254 as Pairing>::G2Prepared;
 use rand::{Rng, thread_rng};
 use serde_json::Value;
 use std::{fs, time::Instant, str::FromStr};
