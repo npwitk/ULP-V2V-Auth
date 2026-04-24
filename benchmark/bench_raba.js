@@ -91,7 +91,7 @@ const SCENARIOS = [
 ];
 
 const N_WINDOWS  = 5;    // windows per scenario (≥5 for stable statistics)
-const POOL_MIN   = 55;   // minimum pool size (covers k_R=50 + overhead)
+const POOL_MIN   = 30;   // minimum pool size (matches bench_dcv.js cache of K=30)
 
 // ---------------------------------------------------------------------------
 // Helpers
