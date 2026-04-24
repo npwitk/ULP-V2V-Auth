@@ -90,8 +90,8 @@ const SCENARIOS = [
     { label: "Dense+Adv  (k=50, w=1)", k: 50, rho: 28, adv: true  },
 ];
 
-const N_WINDOWS  = 5;    // windows per scenario (≥5 for stable statistics)
-const POOL_MIN   = 30;   // minimum pool size (matches bench_dcv.js cache of K=30)
+const N_WINDOWS  = 500;  // windows per scenario — 500 gives stable mean/P99/min-margin
+const POOL_MIN   = 60;   // pool size ≥ dense-scenario batch (k=50) with headroom
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -337,26 +337,23 @@ async function main() {
 
         const windowResults = [];
 
+        const PRINT_EVERY = Math.max(1, Math.floor(N_WINDOWS / 10)); // print ~10 updates
         for (let w = 0; w < N_WINDOWS; w++) {
-            process.stdout.write(`  Window ${w + 1}/${N_WINDOWS}...  \r`);
             const res = await runWindow(pool, vk, batchCurve, sc.k, sc.adv);
             windowResults.push(res);
 
-            // Quick per-window summary
-            const E = res.results.filter(r => r.cls === "E");
-            const W = res.results.filter(r => r.cls === "W");
-            const R = res.results.filter(r => r.cls === "R");
-            const fmt = arr => {
-                if (arr.length === 0) return "—";
-                const wallMax = Math.max(...arr.map(r => r.wallMs));
-                const allMet  = arr.every(r => r.met);
-                return `${wallMax.toFixed(0)} ms  ${allMet ? "✓" : "✗ MISS"}`;
-            };
-            const dcvNote = res.dcvCalls > 0 ? `  [DCV calls: ${res.dcvCalls}]` : "";
-            console.log(
-                `  Window ${w + 1}: E→${fmt(E)}  W→${fmt(W)}  R→${fmt(R)}${dcvNote}`
-            );
+            // Progress: print every PRINT_EVERY windows and on the last window
+            if ((w + 1) % PRINT_EVERY === 0 || w === N_WINDOWS - 1) {
+                const doneSoFar = windowResults.slice(-PRINT_EVERY);
+                const misses = doneSoFar.flatMap(r => r.results).filter(r => !r.met).length;
+                const dcvAcc = doneSoFar.reduce((s, r) => s + r.dcvCalls, 0);
+                const dcvNote = sc.adv ? `  DCV acc=${dcvAcc}` : "";
+                process.stdout.write(
+                    `  [${w + 1}/${N_WINDOWS}] misses_in_last_batch=${misses}${dcvNote}  \r`
+                );
+            }
         }
+        console.log(""); // newline after progress
 
         // Aggregate
         const Eagg = aggregateClass("E", windowResults);
