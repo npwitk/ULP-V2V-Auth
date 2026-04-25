@@ -45,13 +45,13 @@ const PROOF_CACHE = path.join("results", "dcv_proofs.json");
 // RABA parameters (must match bench_raba.js)
 // ---------------------------------------------------------------------------
 const T_WINDOW_MS = 100;
-const T1          = 38;
+const T1          = 36.2;  // measured k=1 batch time (ms) — updated RPi4 benchmark
 const D_E         = 200;
 const D_W         = 500;
 const D_R         = 2000;
 const K_E_MAX     = Math.floor(D_E / T1);              // 5
 const K_W_MAX     = Math.floor(D_W / T1);              // 13
-const K_R_MAX     = Math.min(50, Math.floor(D_R / T1)); // 50
+const K_R_MAX     = Math.min(50, Math.floor(D_R / T1)); // 50 (guard margin; theoretical k_R*=55)
 
 const P_E = 0.05;
 const P_W = 0.25;
