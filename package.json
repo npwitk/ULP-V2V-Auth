@@ -17,6 +17,7 @@
     "bench-dcv": "node benchmark/bench_dcv.js",
     "bench-raba": "node benchmark/bench_raba.js",
     "bench-ablation": "node benchmark/bench_raba_ablation.js",
+    "bench-comparison": "node benchmark/bench_comparison.js",
     "bench-e2e": "node obu/bench_e2e.js",
     "ta-server": "node server/ta_server.js",
     "ais-server": "node server/ais_server.js --ta=http://127.0.0.1:3001",
