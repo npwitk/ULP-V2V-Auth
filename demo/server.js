@@ -27,8 +27,24 @@ let vk, baseInput, poseidon, batchCurve;
 const sessions = new WeakMap();
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// BN254 scalar field prime
+const BN254_P = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
+
 // ── helpers ────────────────────────────────────────────
 function rndHex(n) { return crypto.randomBytes(n).toString("hex"); }
+
+/** Generate a P-256 keypair and extract pkOt = x-coord of pubkey mod BN254_P */
+function genPkOt() {
+    const { privateKey: sk, publicKey: pk } = crypto.generateKeyPairSync("ec", {
+        namedCurve        : "P-256",
+        publicKeyEncoding  : { type: "spki",  format: "der" },
+        privateKeyEncoding : { type: "pkcs8", format: "der" },
+    });
+    // SPKI DER ends with: 0x04 || x(32B) || y(32B)
+    const raw  = pk.slice(-65);          // last 65 bytes = uncompressed point
+    const xBig = BigInt("0x" + raw.slice(1, 33).toString("hex")) % BN254_P;
+    return { sk, pk, pkOtBig: xBig, pkOt: xBig.toString() };
+}
 function trunc(s, n = 20) { s = String(s); return s.length > n ? s.slice(0, n) + "…" : s; }
 
 /** Arbitrary BigInt → 0x-prefixed 64-char hex (field element) */
@@ -296,12 +312,14 @@ async function handleASTAcquisition(ws, msg) {
     });
     await sleep(180);
 
-    // Build session input for Phase 3 & 4
-    const hMessage = F.toObject(poseidon([BigInt(baseInput.message), tCur]));
-    const sessionInput = {
+    // Circuit public inputs: merkleRoot, tCurrent, pkOt
+    // Circuit private inputs: sid, tStart, tEnd, cap, r, pathElements[8], pathIndices[8]
+    // (no message / hMessage — the circuit uses pkOt to bind the one-time key)
+
+    // Session template shared across all proof slots (pkOt varies per slot)
+    const sessionTemplate = {
         merkleRoot   : merkleRoot.toString(),
         tCurrent     : tCur.toString(),
-        hMessage     : hMessage.toString(),
         sid          : sid.toString(),
         tStart       : tStart.toString(),
         tEnd         : tEnd.toString(),
@@ -309,12 +327,15 @@ async function handleASTAcquisition(ws, msg) {
         r            : r.toString(),
         pathElements : pathElements.map(x => x.toString()),
         pathIndices  : pathIndices.map(x => x.toString()),
-        message      : baseInput.message,
     };
+    sess.session = sessionTemplate;   // stored for Phase 4
 
-    // ONE real Groth16 prove → first cache slot
+    // ONE real Groth16 prove → first cache slot (with a real P-256 keypair)
     const N_CACHE = 5;
     send(ws, { type: "ast", step: "precomp_start", total: N_CACHE });
+
+    const slot0 = genPkOt();
+    const sessionInput = { ...sessionTemplate, pkOt: slot0.pkOt };
 
     const t_prove = performance.now();
     const { proof: realProof, publicSignals: realPubs } =
@@ -475,23 +496,20 @@ async function handleOnlineBSM(ws, msg) {
 async function handleRABA(ws, k) {
     const sess = sessions.get(ws);
     const base = sess.session || baseInput;
-    const F    = poseidon.F;
 
     send(ws, { type: "raba_start", k });
 
-    // Generate k real proofs
+    // Generate k real proofs — each with a fresh pkOt (one-time key per BSM)
     const proofs = [], pubSigs = [];
     for (let i = 0; i < k; i++) {
-        const msgBig   = BigInt("0xBEEF0000") + BigInt(i * 0x1111);
-        const tCurrent = BigInt(base.tCurrent || Math.floor(Date.now() / 1000));
-        const hMessage = F.toObject(poseidon([msgBig, tCurrent])).toString();
-        const input    = { ...base, message: msgBig.toString(), hMessage };
-        const t0       = performance.now();
+        const { pkOt } = genPkOt();                    // fresh keypair per slot
+        const input = { ...base, pkOt };               // base = sessionTemplate (no hMessage)
+        const t0    = performance.now();
         const { proof, publicSignals } = await snarkjs.groth16.fullProve(input, WASM, ZKEY);
         const ms = +(performance.now() - t0).toFixed(0);
         proofs.push(proof); pubSigs.push(publicSignals);
-        send(ws, { type: "raba_proof_ready",
-            index: i + 1, k, ms, bsm: "0x" + msgBig.toString(16).toUpperCase().padStart(8, "0") });
+        const bsmHex = "0x" + (0xBEEF0000 + i * 0x1111).toString(16).toUpperCase().padStart(8, "0");
+        send(ws, { type: "raba_proof_ready", index: i + 1, k, ms, bsm: bsmHex });
     }
 
     // Classify 5% E / 25% W / 70% R
