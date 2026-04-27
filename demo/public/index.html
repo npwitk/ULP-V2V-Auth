@@ -293,13 +293,15 @@ button.nav-btn:disabled{opacity:.35;cursor:not-allowed;}
 .big-num{font-size:32px;font-weight:700;font-family:var(--mono);line-height:1;}
 
 /* ── timing compare bars ─────────────────────────────── */
-.trow{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
-.t-label{width:58px;font-size:10px;color:var(--muted);flex-shrink:0;}
-.t-barwrap{flex:1;background:var(--bg3);border-radius:3px;height:16px;overflow:hidden;}
-.t-bar{height:100%;border-radius:3px;display:flex;align-items:center;padding-left:6px;font-size:10px;font-weight:700;transition:width .6s;min-width:24px;}
-.t-bar.seq  {background:#3a1a1a;color:var(--red);}
-.t-bar.batch{background:#1a3a2a;color:var(--green);}
-.t-bar.indiv{background:#3a2a00;color:var(--yellow);}
+.trow{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.t-label{width:54px;font-size:10px;color:var(--muted);flex-shrink:0;white-space:nowrap;}
+.t-barwrap{flex:1;background:var(--bg3);border-radius:3px;height:14px;overflow:hidden;}
+.t-bar{height:100%;border-radius:3px;transition:width .6s;}
+.t-bar.seq  {background:#3a1a1a;}
+.t-bar.batch{background:#1a3a2a;}
+.t-bar.indiv{background:#3a2a00;}
+.t-ms{font-size:10px;font-family:var(--mono);flex-shrink:0;white-space:nowrap;
+  min-width:58px;text-align:right;color:var(--muted);}
 .speedup{
   display:inline-flex;align-items:center;gap:3px;
   background:#1a3a2a;color:var(--green);border:1px solid #2a5a3a;
@@ -433,8 +435,7 @@ input[type=range]{flex:1;accent-color:var(--blue);}
     <div class="sys-diagram">
       <div class="sys-node">
         <div class="sn-box" style="border-color:var(--purple)">
-          <span style="font-size:20px">🏛</span>
-          <span style="color:var(--purple)">TA</span>
+          <span style="font-size:22px;font-weight:800;color:var(--purple)">TA</span>
         </div>
         <span class="sn-label">Trusted Authority</span>
       </div>
@@ -444,8 +445,7 @@ input[type=range]{flex:1;accent-color:var(--blue);}
       </div>
       <div class="sys-node">
         <div class="sn-box" style="border-color:var(--orange)">
-          <span style="font-size:20px">📡</span>
-          <span style="color:var(--orange)">AIS</span>
+          <span style="font-size:22px;font-weight:800;color:var(--orange)">AIS</span>
         </div>
         <span class="sn-label">RSU / AIS</span>
       </div>
@@ -455,19 +455,17 @@ input[type=range]{flex:1;accent-color:var(--blue);}
       </div>
       <div class="sys-node">
         <div class="sn-box" style="border-color:var(--blue)">
-          <span style="font-size:20px">🚗</span>
-          <span style="color:var(--blue)">V<sub>P</sub></span>
+          <span style="font-size:22px;font-weight:800;color:var(--blue)">\(V_P\)</span>
         </div>
         <span class="sn-label">Prover Vehicle</span>
       </div>
       <div class="sys-arrow">
         <div class="ar-line"></div>
-        <div class="ar-label" style="color:var(--green)">BSM + σ_ot</div>
+        <div class="ar-label" style="color:var(--green)">BSM + \(\sigma_{ot}\)</div>
       </div>
       <div class="sys-node">
         <div class="sn-box" style="border-color:var(--green)">
-          <span style="font-size:20px">🚙</span>
-          <span style="color:var(--green)">V<sub>V</sub></span>
+          <span style="font-size:22px;font-weight:800;color:var(--green)">\(V_V\)</span>
         </div>
         <span class="sn-label">Verifier Vehicle</span>
       </div>
@@ -530,37 +528,37 @@ input[type=range]{flex:1;accent-color:var(--blue);}
         </div>
 
         <div class="card" id="sk_card" style="display:none">
-          <div class="card-title">🔴 Long-term Private Key (sk<sub>i</sub>) — OBU tamper-proof storage</div>
+          <div class="card-title">Private Key \(sk_i\) — 256-bit BN254 scalar, tamper-proof storage</div>
           <div class="card-body">
             <div class="hexblock"><span class="hl orange" id="sk_hex"></span></div>
-            <div style="margin-top:5px;font-size:10px;color:var(--muted)">256-bit BN254 scalar · never leaves OBU</div>
+            <div style="margin-top:5px;font-size:10px;color:var(--muted)">Never leaves OBU</div>
           </div>
         </div>
 
         <div class="card" id="pk_card" style="display:none">
-          <div class="card-title">🔵 Public Key (pk<sub>i</sub>) — G1 point on BN254</div>
+          <div class="card-title">Public Key \(pk_i\) — G1 point on BN254</div>
           <div class="card-body">
             <div class="fg">
-              <div class="fl">x</div><div class="fv blue" id="pk_x"></div>
-              <div class="fl">y</div><div class="fv blue" id="pk_y"></div>
+              <div class="fl">\(x\)</div><div class="fv blue" id="pk_x"></div>
+              <div class="fl">\(y\)</div><div class="fv blue" id="pk_y"></div>
             </div>
           </div>
         </div>
 
         <div class="card" id="nonce_card" style="display:none">
-          <div class="card-title">TA nonce (256-bit random)</div>
+          <div class="card-title">TA nonce — 256-bit random</div>
           <div class="card-body">
             <div class="hexblock"><span class="hl" id="nonce_hex"></span></div>
           </div>
         </div>
 
         <div class="card" id="sigma_card" style="display:none">
-          <div class="card-title">🟣 Anonymous Credential \(\sigma_i = \text{Sign}_{sk_{TA}}(H(pk_i \,\Vert\, nonce))\)</div>
+          <div class="card-title">Anonymous Credential \(\sigma_i = \text{Sign}_{sk_{TA}}(H(pk_i \,\Vert\, nonce))\)</div>
           <div class="card-body">
             <div class="fg">
-              <div class="fl">r</div><div class="fv purple" id="sigma_r"></div>
-              <div class="fl">s</div><div class="fv purple" id="sigma_s"></div>
-              <div class="fl">pk_TA</div><div class="fv muted" id="pk_ta"></div>
+              <div class="fl">\(r\)</div><div class="fv purple" id="sigma_r"></div>
+              <div class="fl">\(s\)</div><div class="fv purple" id="sigma_s"></div>
+              <div class="fl">\(pk_{TA}\)</div><div class="fv muted" id="pk_ta"></div>
             </div>
             <div style="margin-top:8px;font-size:10px;color:var(--muted)">
               Stored in OBU. Used in Phase 2 ZKP to prove registration without revealing VIN.
@@ -638,13 +636,13 @@ input[type=range]{flex:1;accent-color:var(--blue);}
           <!-- Root + Leaf hex summary cards -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
             <div class="card">
-              <div class="card-title">🟢 Root \(R_{local}\) — Groth16 public input</div>
+              <div class="card-title">Root \(R_{local}\) — Groth16 public input</div>
               <div class="card-body">
                 <div class="hexblock"><span class="hl green" id="rootHex"></span></div>
               </div>
             </div>
             <div class="card">
-              <div class="card-title">🟠 Leaf \(= H_{\text{Pos}}(sid\,\Vert\,t_s\,\Vert\,t_e\,\Vert\,cap\,\Vert\,r)\)</div>
+              <div class="card-title">Leaf \(= H_{\text{Pos}}(sid\,\Vert\,t_{start}\,\Vert\,t_{end}\,\Vert\,cap\,\Vert\,r)\)</div>
               <div class="card-body">
                 <div class="hexblock"><span class="hl orange" id="leafHex"></span></div>
               </div>
@@ -688,7 +686,7 @@ input[type=range]{flex:1;accent-color:var(--blue);}
 
     <!-- Left: Prover -->
     <div class="col">
-      <div class="col-hdr"><span class="entity e-obu">V<sub>P</sub></span><h3>Prover Vehicle — online cost ≈ 0.197 ms</h3></div>
+      <div class="col-hdr"><span class="entity e-obu">\(V_P\)</span><h3>Prover Vehicle — online cost \(\approx 0.197\) ms</h3></div>
       <div class="scroll">
         <button class="action-btn green" id="btnBSM" onclick="doBSM()" disabled>Send Authenticated BSM</button>
         <div class="notice green">
@@ -700,18 +698,18 @@ input[type=range]{flex:1;accent-color:var(--blue);}
           <div class="card-body"><div class="slist" id="proverSteps"></div></div>
         </div>
         <div class="card" id="ecdsaCard" style="display:none">
-          <div class="card-title">✍ One-Time ECDSA-P256 Signature (real, measured)</div>
+          <div class="card-title">One-Time ECDSA-P256 Signature \(\sigma_{ot}\) (real, measured)</div>
           <div class="card-body">
             <div class="fg">
-              <div class="fl">sk_ot</div><div class="fv orange" id="ot_sk"></div>
-              <div class="fl">pk_ot</div><div class="fv blue" id="ot_pk"></div>
-              <div class="fl">σ_ot</div><div class="fv purple" id="ot_sig"></div>
+              <div class="fl">\(sk_{ot}\)</div><div class="fv orange" id="ot_sk"></div>
+              <div class="fl">\(pk_{ot}\)</div><div class="fv blue" id="ot_pk"></div>
+              <div class="fl">\(\sigma_{ot}\)</div><div class="fv purple" id="ot_sig"></div>
               <div class="fl">payload</div><div class="fv muted" id="ot_payload"></div>
             </div>
           </div>
         </div>
         <div class="card" id="packetCard" style="display:none">
-          <div class="card-title">📡 Broadcast Packet (529 bytes over IEEE 802.11p)</div>
+          <div class="card-title">Broadcast Packet (529 B over IEEE 802.11p)</div>
           <div class="card-body">
             <div class="pkt" id="pktView"></div>
           </div>
@@ -721,10 +719,10 @@ input[type=range]{flex:1;accent-color:var(--blue);}
 
     <!-- Right: Receiver -->
     <div class="col">
-      <div class="col-hdr"><span class="entity e-rcv">V<sub>V</sub></span><h3>Verifier Vehicle — authentication pipeline</h3></div>
+      <div class="col-hdr"><span class="entity e-rcv">\(V_V\)</span><h3>Verifier Vehicle — authentication pipeline</h3></div>
       <div class="scroll">
         <div class="notice">
-          Receiver runs 3 checks in order. Groth16 verify uses the proof from the prover's
+          Receiver runs 3 checks in order. Groth16 verify uses the proof from \(V_P\)'s
           cache — 4 pairings on BN254, one shared final exponentiation.
         </div>
         <div class="card">
@@ -732,10 +730,10 @@ input[type=range]{flex:1;accent-color:var(--blue);}
           <div class="card-body"><div class="slist" id="recvSteps"></div></div>
         </div>
         <div class="card" id="g16Card" style="display:none">
-          <div class="card-title">⚡ Groth16 Verify — cached proof (BN254, 4 pairings)</div>
+          <div class="card-title">Groth16 Verify — cached proof (BN254, 4 pairings)</div>
           <div class="card-body">
             <div class="fg">
-              <div class="fl">proof π.A</div><div class="fv purple" id="g16_pi"></div>
+              <div class="fl">\(\pi_A\)</div><div class="fv purple" id="g16_pi"></div>
             </div>
             <div class="fg" style="margin-top:7px" id="g16Summary"></div>
           </div>
@@ -759,47 +757,58 @@ input[type=range]{flex:1;accent-color:var(--blue);}
     <h2>RABA — Real-Time Adaptive Batch Authentication</h2>
     <span class="ph-sub">— verifier processes k proofs per 100 ms window, 3 priority queues</span>
   </div>
+  <!-- k explanation banner -->
+  <div style="background:var(--bg3);border-bottom:1px solid var(--border);
+    padding:6px 16px;font-size:10px;color:var(--muted);display:flex;gap:20px;align-items:center;flex-shrink:0">
+    <span><strong style="color:var(--text)">\(k\)</strong> = total BSMs arriving in one 100 ms window.
+      RABA classifies each by priority, then verifies per class using Bellman–Garay–Rabin batch:
+      \(k_C + 3\) pairings instead of \(3k_C\) sequential.</span>
+    <span style="flex-shrink:0">snarkjs proves: ~2.3 s &nbsp;|&nbsp; rapidsnark: ~946 ms (~\(2.4\times\) faster)</span>
+  </div>
   <div class="cols c3" style="flex:1">
 
     <!-- Emergency -->
     <div class="raba-col">
       <div class="raba-hdr E">
-        <span class="rc-E">🚨 Emergency</span>
-        <span class="badge r">D = 200 ms</span>
+        <span class="rc-E">Emergency</span>
+        <span class="badge r">\(D_E = 200\) ms</span>
       </div>
       <div class="raba-body" id="rabaE">
         <div class="big-num rc-E" id="qcE">—</div>
-        <div style="font-size:11px;color:var(--muted)" id="qsE">5% of traffic</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px">Individual verify<br>(fastest path — \(4\) pairings, no batch overhead)</div>
+        <div style="font-size:11px;color:var(--muted)" id="qsE">~5% of traffic</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">Individual verify — 4 pairings<br>No batching delay; minimum latency</div>
       </div>
     </div>
 
     <!-- Warning -->
     <div class="raba-col">
       <div class="raba-hdr W">
-        <span class="rc-W">⚠ Warning</span>
-        <span class="badge y">D = 500 ms</span>
+        <span class="rc-W">Warning</span>
+        <span class="badge y">\(D_W = 500\) ms</span>
       </div>
       <div class="raba-body" id="rabaW">
         <div class="big-num rc-W" id="qcW">—</div>
-        <div style="font-size:11px;color:var(--muted)" id="qsW">25% of traffic</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px">Groth16 true batch verify<br>\(k+3\) pairings vs \(3k\) sequential</div>
+        <div style="font-size:11px;color:var(--muted)" id="qsW">~25% of traffic</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">Groth16 true batch verify<br>\(k_W+3\) pairings vs \(3k_W\) sequential</div>
       </div>
     </div>
 
     <!-- Routine -->
     <div class="raba-col">
       <div class="raba-hdr R">
-        <span class="rc-R">📋 Routine BSM</span>
-        <span class="badge g">D = 2000 ms</span>
+        <span class="rc-R">Routine</span>
+        <span class="badge g">\(D_R = 2000\) ms</span>
       </div>
       <div class="raba-body" id="rabaR">
         <div class="big-num rc-R" id="qcR">—</div>
-        <div style="font-size:11px;color:var(--muted)" id="qsR">70% of traffic</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px">Groth16 true batch verify<br>Maximum speedup at scale — \(4.54\times\) at \(k{=}30\)</div>
+        <div style="font-size:11px;color:var(--muted)" id="qsR">~70% of traffic</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">Groth16 true batch verify<br>Max speedup — \(4.54\times\) measured at \(k{=}30\)</div>
         <div style="margin-top:12px">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:5px">
+            Set \(k\) = total BSMs in the window:
+          </div>
           <div class="krow">
-            <span style="font-size:11px;color:var(--muted)">k =</span>
+            <span style="font-size:11px;color:var(--muted)">\(k =\)</span>
             <input type="range" id="kSlider" min="3" max="12" value="6"
               oninput="document.getElementById('kVal').textContent=this.value">
             <span class="kval" id="kVal">6</span>
@@ -915,6 +924,16 @@ function setS(id, st, ms) {
     if (ms !== undefined) {
         const me = document.getElementById("ms-" + id);
         if (me) me.textContent = ms;
+    }
+}
+
+// ── KaTeX helper for dynamic content ─────────────────────
+function renderMath(el) {
+    if (window.renderMathInElement) {
+        renderMathInElement(el, {
+            delimiters: [{left:"\\(",right:"\\)",display:false}],
+            throwOnError: false,
+        });
     }
 }
 
@@ -1061,11 +1080,12 @@ function doRegister() {
         document.getElementById(id).style.display = "none");
 
     const c = document.getElementById("regSteps"); c.innerHTML = "";
-    c.appendChild(mkStep("rk", "1", "Generate keypair (sk<sub>i</sub>, pk<sub>i</sub>)", "256-bit BN254 scalar"));
-    c.appendChild(mkStep("rs", "2", "Send VIN + pk<sub>i</sub> to TA", "Secure out-of-band channel"));
+    c.appendChild(mkStep("rk", "1", "Generate keypair \\(( sk_i,\\, pk_i )\\)", "256-bit BN254 scalar"));
+    c.appendChild(mkStep("rs", "2", "Send VIN + \\(pk_i\\) to TA", "Secure out-of-band channel"));
     c.appendChild(mkStep("rv", "3", "TA verifies VIN", "Check vehicle registry"));
     c.appendChild(mkStep("rn", "4", "TA samples 256-bit nonce"));
-    c.appendChild(mkStep("ri", "5", "TA issues σ<sub>i</sub> = Sign<sub>sk_TA</sub>(H(pk ∥ nonce))", "Credential stored in OBU tamper-proof module"));
+    c.appendChild(mkStep("ri", "5", "TA issues \\(\\sigma_i = \\text{Sign}_{sk_{TA}}(H(pk_i \\,\\Vert\\, nonce))\\)", "Credential stored in OBU tamper-proof module"));
+    renderMath(c);
     setS("rk", "active");
     wsSend({ cmd: "register", vin });
 }
@@ -1079,12 +1099,13 @@ function doAcquire() {
 
     const c = document.getElementById("acqSteps"); c.innerHTML = "";
     c.appendChild(mkStep("ac", "1", "Connect to AIS / RSU"));
-    c.appendChild(mkStep("ar", "2", "Verify AIS certificate", "Sign<sub>sk_TA</sub>(pk_AIS) — prevents rogue AIS"));
-    c.appendChild(mkStep("az", "3", "ZKP of credential σ<sub>i</sub>", "Groth16 credential proof — proves registration without revealing sk_i"));
-    c.appendChild(mkStep("aa", "4", "Receive AST + Merkle proof", "{sid, t_start, t_end, cap, r, π_MT, R_local}"));
-    c.appendChild(mkStep("am", "5", "Build depth-8 Poseidon Merkle tree", "Real Poseidon hashing — computing now"));
-    c.appendChild(mkStep("ab", "6", "Receive bridge path π_bridge", "8 × 32 B = 256 B — links R_local → R_global"));
-    c.appendChild(mkStep("ap", "7", "Offline cache fill", "ONE real Groth16 prove shown (rest simulated for speed)"));
+    c.appendChild(mkStep("ar", "2", "Verify AIS certificate", "\\(\\text{Sign}_{sk_{TA}}(pk_{AIS})\\) — prevents rogue RSU"));
+    c.appendChild(mkStep("az", "3", "ZKP of credential \\(\\sigma_i\\)", "Groth16 proof of possession — proves registration without revealing \\(sk_i\\)"));
+    c.appendChild(mkStep("aa", "4", "Receive AST + Merkle proof", "\\(\\{sid, t_{start}, t_{end}, cap, r,\\, \\pi_{MT},\\, R_{local}\\}\\)"));
+    c.appendChild(mkStep("am", "5", "Build depth-8 Poseidon Merkle tree", "Real \\(H_{\\text{Pos}}\\) hashing — computing now"));
+    c.appendChild(mkStep("ab", "6", "Receive bridge path \\(\\pi_{bridge}\\)", "8 × 32 B = 256 B — links \\(R_{local} \\to R_{global}\\)"));
+    c.appendChild(mkStep("ap", "7", "Offline cache fill (Groth16 precompute)", "1 real proof shown — rest simulated for demo speed"));
+    renderMath(c);
     setS("ac", "active");
     wsSend({ cmd: "acquire" });
 }
@@ -1098,16 +1119,18 @@ function doBSM() {
     document.getElementById("timingSummary").style.display = "none";
 
     const cp = document.getElementById("proverSteps"); cp.innerHTML = "";
-    cp.appendChild(mkStep("pd", "▶", "Cache dequeue", "Array pop — slot = (π, sk_ot, pk_ot, t_gen) — < 0.01 ms"));
-    cp.appendChild(mkStep("ps", "✍", "ECDSA-P256 sign σ_ot = Sign<sub>sk_ot</sub>(m ∥ t_cur)", "Only online crypto op — ~0.2 ms"));
-    cp.appendChild(mkStep("pe", "🗑", "Erase sk_ot", "One-time use enforced — tamper-proof storage"));
-    cp.appendChild(mkStep("pb", "→", "Broadcast packet", "529 bytes over IEEE 802.11p"));
+    cp.appendChild(mkStep("pd", "1", "Cache dequeue", "\\(( \\pi,\\, sk_{ot},\\, pk_{ot},\\, t_{gen} )\\) — array pop, \\(< 0.01\\) ms"));
+    cp.appendChild(mkStep("ps", "2", "ECDSA-P256 sign \\(\\sigma_{ot} = \\text{Sign}_{sk_{ot}}(m \\,\\Vert\\, t_{cur})\\)", "Only online crypto op — \\(\\approx 0.2\\) ms"));
+    cp.appendChild(mkStep("pe", "3", "Erase \\(sk_{ot}\\)", "One-time use enforced — unlinkability guarantee"));
+    cp.appendChild(mkStep("pb", "4", "Broadcast 529-byte packet", "IEEE 802.11p broadcast"));
+    renderMath(cp);
 
     const cr = document.getElementById("recvSteps"); cr.innerHTML = "";
-    cr.appendChild(mkStep("rb", "🔗", "Bridge path check", "H_Pos(R_local, π_bridge) = R_global — confirms AIS zone"));
-    cr.appendChild(mkStep("re", "🔑", "ECDSA verify σ_ot", "Binds message content to one-time key — ~0.4 ms"));
-    cr.appendChild(mkStep("rg", "⚡", "Groth16 verify π", "Checks Merkle membership + time range + pk_ot binding — ~39 ms"));
-    cr.appendChild(mkStep("ro", "✓", "Authenticated!"));
+    cr.appendChild(mkStep("rb", "1", "Bridge path check", "\\(H_{\\text{Pos}}(R_{local},\\, \\pi_{bridge}) = R_{global}\\) — confirms AIS zone"));
+    cr.appendChild(mkStep("re", "2", "ECDSA verify \\(\\sigma_{ot}\\)", "Binds message to one-time key — \\(\\approx 0.4\\) ms"));
+    cr.appendChild(mkStep("rg", "3", "Groth16 verify \\(\\pi\\)", "Merkle membership + time range + \\(pk_{ot}\\) binding — \\(\\approx 39\\) ms"));
+    cr.appendChild(mkStep("ro", "4", "Authenticated"));
+    renderMath(cr);
 
     setS("pd", "active");
     wsSend({ cmd: "online_bsm" });
@@ -1281,10 +1304,12 @@ const handlers = {
                 setS("ro", "done");
                 document.getElementById("g16Card").style.display = "";
                 document.getElementById("g16_pi").textContent = m.pi_hex;
-                document.getElementById("g16Summary").innerHTML = `
-                  <div class="fl">pairings</div><div class="fv blue">${m.pairings} (k+3 batch formula)</div>
+                const g16el = document.getElementById("g16Summary");
+                g16el.innerHTML = `
+                  <div class="fl">pairings</div><div class="fv blue">\(k+3 = ${m.pairings}\) (Bellman–Garay–Rabin)</div>
                   <div class="fl">time</div><div class="fv green">${m.ms} ms</div>
-                  <div class="fl">valid</div><div class="fv green">${m.valid ? "✓ yes" : "✗ no"}</div>`;
+                  <div class="fl">valid</div><div class="fv green">${m.valid ? "yes" : "no"}</div>`;
+                renderMath(g16el);
             }
         }
     },
@@ -1299,17 +1324,26 @@ const handlers = {
 
         const maxMs = Math.max(50, m.g16Ms * 1.2);
         document.getElementById("timingBody").innerHTML = `
-          <div class="trow"><span class="t-label">Dequeue</span>
-            <div class="t-barwrap"><div class="t-bar indiv" style="width:${Math.max(2, m.deqMs/maxMs*100)}%">${m.deqMs} ms</div></div></div>
-          <div class="trow"><span class="t-label">ECDSA sign</span>
-            <div class="t-barwrap"><div class="t-bar indiv" style="width:${Math.max(4, m.signMs/maxMs*100)}%">${m.signMs} ms ← prover online cost</div></div></div>
-          <div class="trow"><span class="t-label">Groth16 ver.</span>
-            <div class="t-barwrap"><div class="t-bar batch" style="width:${Math.min(100, m.g16Ms/maxMs*100)}%">${m.g16Ms} ms ← receiver cost</div></div></div>
+          <div class="trow">
+            <span class="t-label">Dequeue</span>
+            <div class="t-barwrap"><div class="t-bar indiv" style="width:${Math.max(1, m.deqMs/maxMs*100)}%"></div></div>
+            <span class="t-ms">${m.deqMs} ms</span>
+          </div>
+          <div class="trow">
+            <span class="t-label">ECDSA sign</span>
+            <div class="t-barwrap"><div class="t-bar indiv" style="width:${Math.max(2, m.signMs/maxMs*100)}%"></div></div>
+            <span class="t-ms" style="color:var(--green)">${m.signMs} ms</span>
+          </div>
+          <div class="trow">
+            <span class="t-label">Groth16 ver.</span>
+            <div class="t-barwrap"><div class="t-bar batch" style="width:${Math.min(100, m.g16Ms/maxMs*100)}%"></div></div>
+            <span class="t-ms" style="color:var(--blue)">${m.g16Ms} ms</span>
+          </div>
           <div style="margin-top:8px;font-size:10px;color:var(--muted)">
-            Prover total: <strong style="color:var(--green)">${m.totalProverMs} ms</strong>
-            (${m.pctBSM}% of 100ms BSM cycle) ·
-            Receiver: <strong style="color:var(--blue)">${m.g16Ms} ms</strong>
+            \(V_P\) online: <strong style="color:var(--green)">${m.totalProverMs} ms</strong> (deq + ECDSA) &nbsp;·&nbsp;
+            \(V_V\) verify: <strong style="color:var(--blue)">${m.g16Ms} ms</strong> (Groth16)
           </div>`;
+        renderMath(document.getElementById("timingBody"));
         document.getElementById("timingSummary").style.display = "";
     },
 
@@ -1350,20 +1384,28 @@ const handlers = {
             : parseFloat(m.budgetUsed) > 55 ? "var(--yellow)" : "var(--green)";
 
         const body = document.getElementById("raba" + m.cls);
+        const maxT = Math.max(m.seqMs, 1);
         body.innerHTML = `
           <div class="big-num rc-${m.cls}">${m.k}</div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${m.label} proof${m.k!==1?"s":""}</div>
-          ${m.k > 1 ? `<div class="speedup" style="margin-bottom:8px">${m.speedup}× speedup</div>` : ""}
-          <div class="trow"><span class="t-label">Sequential</span>
-            <div class="t-barwrap"><div class="t-bar seq" style="width:${Math.max(8,m.seqMs/2000*100)}%">${m.seqMs} ms</div></div></div>
-          <div class="trow"><span class="t-label">Batch</span>
-            <div class="t-barwrap"><div class="t-bar batch" style="width:${Math.max(4,m.batchMs/2000*100)}%">${m.batchMs} ms</div></div></div>
+          ${m.k > 1 ? `<div class="speedup" style="margin-bottom:8px">${m.speedup}&times; speedup</div>` : ""}
+          <div class="trow">
+            <span class="t-label">Sequential</span>
+            <div class="t-barwrap"><div class="t-bar seq" style="width:100%"></div></div>
+            <span class="t-ms" style="color:var(--red)">${m.seqMs} ms</span>
+          </div>
+          <div class="trow">
+            <span class="t-label">Batch</span>
+            <div class="t-barwrap"><div class="t-bar batch" style="width:${Math.max(4, m.batchMs/maxT*100)}%"></div></div>
+            <span class="t-ms" style="color:var(--green)">${m.batchMs} ms</span>
+          </div>
           <div class="dl-wrap"><div class="dl-fill" style="width:${Math.min(100,m.budgetUsed)}%;background:${budgColor}"></div></div>
-          <div style="font-size:10px;margin-top:3px;font-family:var(--mono);color:${budgColor}">${m.budgetUsed}% of ${m.deadline} ms deadline</div>
+          <div style="font-size:10px;margin-top:3px;font-family:var(--mono);color:${budgColor}">${m.budgetUsed}% of \(D_{${m.cls}}\) = ${m.deadline} ms</div>
           <div style="margin-top:6px">
-            ${m.met ? '<span class="badge g">✓ deadline met</span>' : '<span class="badge r">✗ deadline missed</span>'}
-            <span class="badge b" style="margin-left:4px">${m.pairingsBatch} vs ${m.pairingsSeq} pairings</span>
+            ${m.met ? '<span class="badge g">deadline met</span>' : '<span class="badge r">deadline missed</span>'}
+            <span class="badge b" style="margin-left:4px">\(${m.pairingsBatch}\) vs \(${m.pairingsSeq}\) pairings</span>
           </div>`;
+        renderMath(body);
     },
 
     raba_complete(m) {
