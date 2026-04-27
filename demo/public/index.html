@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ULP-V2V-Auth — Live Demo</title>
+
+<!-- KaTeX: LaTeX math rendering (no build step required) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}],throwOnError:false})"></script>
+
+<!-- D3 v7: Merkle tree visualisation -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" crossorigin="anonymous"></script>
+
 <style>
 /* ── reset + theme ───────────────────────────────────── */
 :root {
@@ -361,6 +371,19 @@ button.nav-btn:disabled{opacity:.35;cursor:not-allowed;}
 .krow{display:flex;align-items:center;gap:9px;flex:1;}
 input[type=range]{flex:1;accent-color:var(--blue);}
 .kval{font-family:var(--mono);font-weight:700;font-size:14px;color:var(--blue);width:20px;}
+
+/* ── D3 merkle tree ──────────────────────────────────── */
+#merkleD3 svg{display:block;}
+#merkleD3 text{font-family:var(--mono);}
+.tree-legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+  font-size:10px;color:var(--muted);margin-bottom:6px;padding:4px 0;}
+.tree-legend span{display:flex;align-items:center;gap:5px;}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
+/* ── KaTeX overrides ─────────────────────────────────── */
+.katex{font-size:1em!important;}
+.card-title .katex{font-size:.95em!important;}
+.notice .katex{font-size:.95em!important;}
 </style>
 </head>
 <body>
@@ -532,7 +555,7 @@ input[type=range]{flex:1;accent-color:var(--blue);}
         </div>
 
         <div class="card" id="sigma_card" style="display:none">
-          <div class="card-title">🟣 Anonymous Credential σ<sub>i</sub> = Sign<sub>sk_TA</sub>(H(pk ∥ nonce))</div>
+          <div class="card-title">🟣 Anonymous Credential \(\sigma_i = \text{Sign}_{sk_{TA}}(H(pk_i \,\Vert\, nonce))\)</div>
           <div class="card-body">
             <div class="fg">
               <div class="fl">r</div><div class="fv purple" id="sigma_r"></div>
@@ -601,8 +624,9 @@ input[type=range]{flex:1;accent-color:var(--blue);}
       <div class="col-hdr"><span class="entity e-obu">OBU</span><h3>Merkle Inclusion Proof (depth-8, Poseidon)</h3></div>
       <div class="scroll">
         <div class="notice blue">
-          The AST leaf is computed as H<sub>Pos</sub>(sid ∥ t_start ∥ t_end ∥ cap ∥ r).
-          The proof path shows the 8 sibling hashes needed to recompute the root from this leaf.
+          Leaf hash: \(H_{\text{Pos}}(sid \,\Vert\, t_{start} \,\Vert\, t_{end} \,\Vert\, cap \,\Vert\, r)\).
+          The tree shows the 8-level Poseidon authentication path from leaf to root —
+          <strong>blue = your path, grey = sibling</strong>. Click any node to inspect its full 32-byte hash.
         </div>
         <div id="astFieldsCard" style="display:none" class="card">
           <div class="card-title">AST Fields (circuit private inputs)</div>
@@ -611,20 +635,37 @@ input[type=range]{flex:1;accent-color:var(--blue);}
           </div>
         </div>
         <div id="merkleTree" style="display:none">
-          <div class="card" style="margin-bottom:9px">
-            <div class="card-title">🟢 Merkle Root R<sub>local</sub> (Groth16 public input)</div>
-            <div class="card-body">
-              <div class="hexblock"><span class="hl green" id="rootHex"></span></div>
+          <!-- Root + Leaf hex summary cards -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div class="card">
+              <div class="card-title">🟢 Root \(R_{local}\) — Groth16 public input</div>
+              <div class="card-body">
+                <div class="hexblock"><span class="hl green" id="rootHex"></span></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">🟠 Leaf \(= H_{\text{Pos}}(sid\,\Vert\,t_s\,\Vert\,t_e\,\Vert\,cap\,\Vert\,r)\)</div>
+              <div class="card-body">
+                <div class="hexblock"><span class="hl orange" id="leafHex"></span></div>
+              </div>
             </div>
           </div>
-          <div style="text-align:center;font-size:10px;color:var(--muted);margin-bottom:5px">
-            ↑ root = Poseidon(path) · scroll down to see leaf ↓
+          <!-- Legend -->
+          <div class="tree-legend">
+            <span><div class="leg-dot" style="background:#3fb950;border:2px solid #3fb950"></div>Merkle Root</span>
+            <span><div class="leg-dot" style="background:#1f3a5f;border:2px solid #58a6ff"></div>Your path node</span>
+            <span><div class="leg-dot" style="background:#3a2000;border:2px solid #ffa657"></div>Your leaf</span>
+            <span><div class="leg-dot" style="background:#21262d;border:2px solid #484f58"></div>Sibling</span>
+            <span style="margin-left:auto;color:var(--blue)">↑ Click any node to inspect hash ↑</span>
           </div>
-          <div class="mt-chain" id="mtChain"></div>
-          <div class="card" style="margin-top:9px">
-            <div class="card-title">🟠 AST Leaf Hash = Poseidon(sid, t_start, t_end, cap, r)</div>
+          <!-- D3 tree SVG target -->
+          <div id="merkleD3" style="width:100%;overflow-x:auto;
+            border:1px solid var(--border);border-radius:6px;background:var(--bg);min-height:100px"></div>
+          <!-- Node detail panel (shown on click) -->
+          <div class="card" style="margin-top:8px;display:none" id="nodeDetailCard">
+            <div class="card-title" id="nodeDetailLabel">Node hash</div>
             <div class="card-body">
-              <div class="hexblock"><span class="hl orange" id="leafHex"></span></div>
+              <div class="hexblock" id="nodeDetail" style="color:var(--blue)">—</div>
             </div>
           </div>
         </div>
@@ -729,7 +770,7 @@ input[type=range]{flex:1;accent-color:var(--blue);}
       <div class="raba-body" id="rabaE">
         <div class="big-num rc-E" id="qcE">—</div>
         <div style="font-size:11px;color:var(--muted)" id="qsE">5% of traffic</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px">Individual verify<br>(fastest path, no batching overhead)</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">Individual verify<br>(fastest path — \(4\) pairings, no batch overhead)</div>
       </div>
     </div>
 
@@ -742,7 +783,7 @@ input[type=range]{flex:1;accent-color:var(--blue);}
       <div class="raba-body" id="rabaW">
         <div class="big-num rc-W" id="qcW">—</div>
         <div style="font-size:11px;color:var(--muted)" id="qsW">25% of traffic</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px">Groth16 true batch verify<br>(k+3 pairings vs 3k sequential)</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">Groth16 true batch verify<br>\(k+3\) pairings vs \(3k\) sequential</div>
       </div>
     </div>
 
@@ -755,7 +796,7 @@ input[type=range]{flex:1;accent-color:var(--blue);}
       <div class="raba-body" id="rabaR">
         <div class="big-num rc-R" id="qcR">—</div>
         <div style="font-size:11px;color:var(--muted)" id="qsR">70% of traffic</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px">Groth16 true batch verify<br>Maximum speedup at scale</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">Groth16 true batch verify<br>Maximum speedup at scale — \(4.54\times\) at \(k{=}30\)</div>
         <div style="margin-top:12px">
           <div class="krow">
             <span style="font-size:11px;color:var(--muted)">k =</span>
@@ -892,53 +933,124 @@ function updateCost() {
     }
 }
 
-// ── merkle tree renderer ──────────────────────────────────
-function renderMerkleTree(treeViz, leafHex, rootHex) {
+// ── D3 merkle tree renderer ───────────────────────────────
+function renderD3MerkleTree(treeViz, leafHex, rootHex) {
     document.getElementById("leafHex").textContent = leafHex;
     document.getElementById("rootHex").textContent = rootHex;
-
-    const chain = document.getElementById("mtChain");
-    chain.innerHTML = "";
-
-    // Show from root-1 down to leaf (level 7 → level 0)
-    const levels = [...treeViz].reverse();
-    levels.forEach(lv => {
-        const lbl = lv.level === 7 ? "Level 7 → Root" :
-                    lv.level === 0 ? "Leaf → Level 1" :
-                    `Level ${lv.level} → Level ${lv.level + 1}`;
-
-        const el = document.createElement("div");
-        el.className = "mt-level";
-        const leftNode  = lv.yourIsRight ? lv.sibling   : lv.yourNode;
-        const rightNode = lv.yourIsRight ? lv.yourNode  : lv.sibling;
-        const leftCls   = lv.yourIsRight ? "sib" : (lv.level === 0 ? "leaf" : "your");
-        const rightCls  = lv.yourIsRight ? (lv.level === 0 ? "leaf" : "your") : "sib";
-        const leftLbl   = lv.yourIsRight ? "sibling" : (lv.level === 0 ? "your leaf" : "your node");
-        const rightLbl  = lv.yourIsRight ? (lv.level === 0 ? "your leaf" : "your node") : "sibling";
-
-        el.innerHTML = `
-          <div class="mt-level-hdr">
-            <span>Level ${lv.level}</span>
-            <span style="color:var(--muted)">→ Poseidon(left, right) →</span>
-            <span>Level ${lv.level + 1}</span>
-          </div>
-          <div class="mt-inputs">
-            <div class="mt-node ${leftCls}">
-              <span class="nlabel">${leftLbl}</span>
-              ${leftNode.short}
-            </div>
-            <div class="mt-node ${rightCls}">
-              <span class="nlabel">${rightLbl}</span>
-              ${rightNode.short}
-            </div>
-          </div>
-          <div class="mt-parent">
-            <span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">parent at level ${lv.level+1}: </span>
-            <span style="font-family:var(--mono);font-size:10px;color:var(--blue)">${lv.parent.short}</span>
-          </div>`;
-        chain.appendChild(el);
-    });
     document.getElementById("merkleTree").style.display = "";
+
+    // Build hierarchy: root at top, leaf at bottom
+    // Each level: pathNode (your authenticated node) + sibNode branch off
+    const shorten = h => (h || "").slice(0, 10) + "…";
+
+    const rootData = {
+        id: "root", label: shorten(rootHex), hex: rootHex,
+        type: "root", levelIdx: 8, children: []
+    };
+    let cur = rootData;
+    for (let lvl = 7; lvl >= 0; lvl--) {
+        const lv = treeViz[lvl];
+        const pathNode = {
+            id: `p${lvl}`, label: shorten(lv.yourNode.hex), hex: lv.yourNode.hex,
+            type: lvl === 0 ? "leaf" : "path", levelIdx: lvl, children: []
+        };
+        const sibNode = {
+            id: `s${lvl}`, label: shorten(lv.sibling.hex), hex: lv.sibling.hex,
+            type: "sibling", levelIdx: lvl, children: []
+        };
+        cur.children = lv.yourIsRight ? [sibNode, pathNode] : [pathNode, sibNode];
+        cur = pathNode;
+    }
+
+    // Render
+    requestAnimationFrame(() => {
+        const container = document.getElementById("merkleD3");
+        container.innerHTML = "";
+
+        const nodeSpacingY = 68;
+        const depth = 9; // root + 8 levels
+        const margin = { top: 36, right: 16, bottom: 20, left: 16 };
+        const W = Math.max(container.clientWidth || 0, 480) - margin.left - margin.right;
+        const H = depth * nodeSpacingY;
+
+        const svg = d3.select("#merkleD3").append("svg")
+            .attr("width", W + margin.left + margin.right)
+            .attr("height", H + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const layout = d3.tree().size([W, H]);
+        const root   = d3.hierarchy(rootData);
+        layout(root);
+
+        // Style maps
+        const fill   = { root: "#122a1a", path: "#1f3a5f", leaf: "#3a2000", sibling: "#161b22" };
+        const stroke = { root: "#3fb950", path: "#58a6ff", leaf: "#ffa657", sibling: "#484f58" };
+        const tc     = { root: "#3fb950", path: "#58a6ff", leaf: "#ffa657", sibling: "#484f58" };
+        const r      = { root: 12, path: 9, leaf: 12, sibling: 5 };
+
+        // Links
+        svg.selectAll(".lk")
+            .data(root.links())
+            .join("path")
+            .attr("d", d3.linkVertical().x(d => d.x).y(d => d.y))
+            .attr("fill", "none")
+            .attr("stroke", d => d.target.data.type === "sibling" ? "#30363d" : "#58a6ff")
+            .attr("stroke-width", d => d.target.data.type === "sibling" ? 1 : 2)
+            .attr("stroke-dasharray", d => d.target.data.type === "sibling" ? "4,3" : null)
+            .attr("opacity", d => d.target.data.type === "sibling" ? 0.45 : 0.85);
+
+        // Nodes
+        const node = svg.selectAll(".nd")
+            .data(root.descendants())
+            .join("g")
+            .attr("transform", d => `translate(${d.x},${d.y})`)
+            .style("cursor", "pointer")
+            .on("click", (_, d) => {
+                const label =
+                    d.data.type === "root"    ? "Merkle Root R_local (Groth16 public input)" :
+                    d.data.type === "leaf"    ? `Your Leaf — H_Pos(sid‖t_start‖t_end‖cap‖r)` :
+                    d.data.type === "sibling" ? `Sibling hash at Level ${d.data.levelIdx}` :
+                                                `Path node at Level ${d.data.levelIdx}`;
+                document.getElementById("nodeDetailLabel").textContent = label;
+                document.getElementById("nodeDetail").textContent      = d.data.hex;
+                document.getElementById("nodeDetailCard").style.display = "";
+            });
+
+        node.append("circle")
+            .attr("r", d => r[d.data.type])
+            .attr("fill",   d => fill[d.data.type])
+            .attr("stroke", d => stroke[d.data.type])
+            .attr("stroke-width", d => d.data.type === "sibling" ? 1 : 2);
+
+        // Hex label below circle (skip for siblings to avoid clutter)
+        node.filter(d => d.data.type !== "sibling")
+            .append("text")
+            .attr("y", d => r[d.data.type] + 13)
+            .attr("text-anchor", "middle")
+            .attr("font-size", 8)
+            .attr("fill", d => tc[d.data.type])
+            .text(d => d.data.label);
+
+        // Type label above circle
+        node.filter(d => d.data.type !== "sibling")
+            .append("text")
+            .attr("y", d => -r[d.data.type] - 5)
+            .attr("text-anchor", "middle")
+            .attr("font-size", 8)
+            .attr("font-weight", "bold")
+            .attr("letter-spacing", ".4px")
+            .attr("fill", d => tc[d.data.type])
+            .text(d =>
+                d.data.type === "root" ? "ROOT" :
+                d.data.type === "leaf" ? "LEAF" :
+                `L${d.data.levelIdx}`);
+
+        // Small dot label for siblings (just show "sib" badge on hover via title)
+        node.filter(d => d.data.type === "sibling")
+            .append("title")
+            .text(d => `Sibling L${d.data.levelIdx}\n${d.data.hex}`);
+    });
 }
 
 // ── phase actions ─────────────────────────────────────────
@@ -1081,7 +1193,7 @@ const handlers = {
               <div class="fl">r (blind)</div><div class="fv muted">${m.r_hex}</div>`;
         } else if (m.step === "merkle_done") {
             setS("am", "done"); setS("ab", "active");
-            renderMerkleTree(m.treeViz, m.leaf_hex, m.root_hex);
+            renderD3MerkleTree(m.treeViz, m.leaf_hex, m.root_hex);
         } else if (m.step === "bridge_path") {
             setS("ab", "done"); setS("ap", "active");
         } else if (m.step === "precomp_start") {
