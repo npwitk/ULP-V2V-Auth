@@ -5,114 +5,312 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ULP-V2V-Auth — Live Demo</title>
 <style>
-:root{
-  --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;
-  --text:#e6edf3;--muted:#8b949e;
-  --green:#3fb950;--blue:#58a6ff;--yellow:#d29922;
-  --red:#f85149;--purple:#bc8cff;--orange:#ffa657;
-  --mono:"JetBrains Mono","Fira Code",monospace;
+/* ── reset + theme ───────────────────────────────────── */
+:root {
+  --bg:     #0d1117;
+  --bg2:    #161b22;
+  --bg3:    #21262d;
+  --border: #30363d;
+  --text:   #e6edf3;
+  --muted:  #8b949e;
+  --green:  #3fb950;
+  --blue:   #58a6ff;
+  --yellow: #d29922;
+  --red:    #f85149;
+  --purple: #bc8cff;
+  --orange: #ffa657;
+  --mono:   "JetBrains Mono","Fira Code","Consolas",monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:13px;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+html,body{height:100%;overflow:hidden;}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:13px;display:flex;flex-direction:column;
+}
 
-/* header */
-header{background:var(--bg2);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-.h-title{font-size:14px;font-weight:700;letter-spacing:-.3px;}
-.h-title span{color:var(--blue);}
-.h-right{display:flex;align-items:center;gap:14px;}
-.h-device{font-size:11px;color:var(--muted);font-family:var(--mono);}
-.ws-pill{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);}
+/* ── topbar ──────────────────────────────────────────── */
+#topbar{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:0 16px;height:44px;flex-shrink:0;
+  display:flex;align-items:center;gap:14px;
+}
+#topbar h1{font-size:13px;font-weight:700;flex-shrink:0;}
+#topbar h1 em{color:var(--blue);font-style:normal;}
+
+.phase-nav{display:flex;align-items:center;gap:4px;flex:1;justify-content:center;}
+.pnav-dot{
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;cursor:pointer;
+  background:var(--bg3);border:2px solid var(--border);
+  color:var(--muted);transition:all .2s;
+}
+.pnav-dot.active{background:#1a2a4a;border-color:var(--blue);color:var(--blue);}
+.pnav-dot.done{background:#1a3a2a;border-color:var(--green);color:var(--green);}
+.pnav-line{flex:1;max-width:40px;height:2px;background:var(--border);border-radius:1px;}
+.pnav-line.done{background:var(--green);}
+
+.ws-pill{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);flex-shrink:0;}
 .ws-dot{width:7px;height:7px;border-radius:50%;background:var(--red);transition:background .3s;}
 .ws-dot.on{background:var(--green);}
+#devBadge{font-family:var(--mono);font-size:10px;color:var(--muted);
+  background:var(--bg3);border:1px solid var(--border);padding:2px 8px;border-radius:4px;}
 
-/* tabs */
-.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;}
-.tab{flex:1;display:flex;align-items:center;gap:9px;padding:9px 14px;cursor:pointer;background:none;border:none;border-right:1px solid var(--border);color:var(--muted);transition:background .15s;text-align:left;}
-.tab:last-child{border-right:none;}
-.tab:hover{background:var(--bg3);}
-.tab.active{background:var(--bg3);color:var(--text);border-bottom:2px solid var(--blue);margin-bottom:-1px;}
-.ph-num{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:var(--bg3);border:1px solid var(--border);flex-shrink:0;}
-.tab.active .ph-num{background:#1a2a4a;border-color:var(--blue);color:var(--blue);}
-.tab-info .t-title{font-size:11px;font-weight:600;}
-.tab-info .t-sub{font-size:10px;color:var(--muted);margin-top:1px;}
-.ph-dot{width:8px;height:8px;border-radius:50%;background:var(--bg);border:1px solid var(--border);margin-left:auto;transition:all .3s;}
-.ph-dot.done{background:var(--green);border-color:var(--green);}
+/* ── page system ─────────────────────────────────────── */
+#pages{flex:1;overflow:hidden;position:relative;}
+.page{
+  position:absolute;inset:0;
+  display:none;flex-direction:column;overflow:hidden;
+}
+.page.active{display:flex;}
 
-/* content */
-main{flex:1;overflow:hidden;display:flex;}
-.view{display:none;width:100%;height:100%;}
-.view.active{display:flex;}
+/* ── page header bar ─────────────────────────────────── */
+.page-hdr{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:10px 18px;flex-shrink:0;
+  display:flex;align-items:center;gap:12px;
+}
+.page-hdr .ph-badge{
+  font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+  padding:3px 10px;border-radius:20px;flex-shrink:0;
+}
+.phase-1 .ph-badge{background:#2a1a4a;color:var(--purple);}
+.phase-2 .ph-badge{background:#3a2000;color:var(--orange);}
+.phase-3 .ph-badge{background:#1f3a5f;color:var(--blue);}
+.phase-4 .ph-badge{background:#3a3000;color:var(--yellow);}
+.page-hdr h2{font-size:14px;font-weight:600;}
+.page-hdr .ph-sub{font-size:11px;color:var(--muted);margin-left:4px;}
 
-/* layout helpers */
-.col2{display:grid;grid-template-columns:1fr 1fr;width:100%;height:100%;}
-.col3{display:grid;grid-template-columns:1fr 1fr 1fr;width:100%;height:100%;}
-.panel{display:flex;flex-direction:column;border-right:1px solid var(--border);height:100%;min-height:0;overflow:hidden;}
-.panel:last-child{border-right:none;}
-.ph{padding:8px 13px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;flex-shrink:0;}
-.ph h2{font-size:11px;font-weight:600;}
-.plabel{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:2px 7px;border-radius:4px;}
-.pl-ta{background:#2a1a4a;color:var(--purple);}
-.pl-ais{background:#3a2000;color:var(--orange);}
-.pl-obu{background:#1f3a5f;color:var(--blue);}
-.pl-rcv{background:#1a3a2a;color:var(--green);}
-.pl-raba{background:#3a3000;color:var(--yellow);}
-.pbody{flex:1;overflow-y:auto;padding:11px 12px;display:flex;flex-direction:column;gap:9px;min-height:0;}
-.pbody::-webkit-scrollbar{width:5px;}
-.pbody::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+/* ── two-column layout ───────────────────────────────── */
+.cols{display:grid;flex:1;min-height:0;overflow:hidden;}
+.cols.c2{grid-template-columns:1fr 1fr;}
+.cols.c3{grid-template-columns:1fr 1fr 1fr;}
+.col{
+  display:flex;flex-direction:column;
+  border-right:1px solid var(--border);overflow:hidden;
+}
+.col:last-child{border-right:none;}
+.col-hdr{
+  padding:8px 13px;background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;flex-shrink:0;
+}
+.col-hdr h3{font-size:11px;font-weight:600;}
+.entity{
+  font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+  padding:2px 7px;border-radius:4px;
+}
+.e-ta  {background:#2a1a4a;color:var(--purple);}
+.e-ais {background:#3a2000;color:var(--orange);}
+.e-obu {background:#1f3a5f;color:var(--blue);}
+.e-rcv {background:#1a3a2a;color:var(--green);}
+.e-raba{background:#3a3000;color:var(--yellow);}
+.scroll{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:9px;}
+.scroll::-webkit-scrollbar{width:4px;}
+.scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 
-/* cards */
+/* ── bottom nav ──────────────────────────────────────── */
+#botnav{
+  background:var(--bg2);border-top:1px solid var(--border);
+  height:44px;flex-shrink:0;display:flex;align-items:center;
+  padding:0 16px;gap:12px;
+}
+button.nav-btn{
+  background:var(--bg3);color:var(--text);border:1px solid var(--border);
+  border-radius:6px;padding:6px 18px;font-size:12px;font-weight:600;cursor:pointer;
+  transition:all .15s;
+}
+button.nav-btn:hover{background:var(--border);}
+button.nav-btn.primary{background:var(--blue);color:#000;border-color:var(--blue);}
+button.nav-btn.primary:hover{opacity:.88;}
+button.nav-btn:disabled{opacity:.35;cursor:not-allowed;}
+#botcenter{flex:1;display:flex;justify-content:center;align-items:center;}
+.action-btn{
+  background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+  padding:7px 20px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text);
+  transition:all .15s;
+}
+.action-btn:hover{background:var(--border);}
+.action-btn.blue{background:#1a2a4a;border-color:var(--blue);color:var(--blue);}
+.action-btn.green{background:#1a3a2a;border-color:var(--green);color:var(--green);}
+.action-btn.orange{background:#3a2000;border-color:var(--orange);color:var(--orange);}
+.action-btn.yellow{background:#3a3000;border-color:var(--yellow);color:var(--yellow);}
+.action-btn:disabled{opacity:.35;cursor:not-allowed;}
+
+/* ── cost bar ────────────────────────────────────────── */
+#costbar{
+  background:var(--bg3);border-top:1px solid var(--border);
+  padding:5px 16px;flex-shrink:0;
+  display:flex;align-items:center;gap:16px;
+  font-size:10px;font-family:var(--mono);
+}
+.cost-item{display:flex;align-items:center;gap:6px;}
+.cost-label{color:var(--muted);}
+.cost-val{font-weight:700;}
+.cost-item.offline .cost-val{color:var(--orange);}
+.cost-item.online  .cost-val{color:var(--green);}
+.cost-item.raba    .cost-val{color:var(--yellow);}
+.cost-divider{width:1px;height:14px;background:var(--border);}
+
+/* ── cards ───────────────────────────────────────────── */
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden;flex-shrink:0;}
-.ctitle{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);padding:6px 10px;border-bottom:1px solid var(--border);background:var(--bg3);}
-.cbody{padding:10px;}
+.card-title{
+  font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+  color:var(--muted);padding:6px 10px;border-bottom:1px solid var(--border);
+  background:var(--bg3);display:flex;align-items:center;gap:7px;
+}
+.card-body{padding:10px 11px;}
 
-/* field grid */
-.fg{display:grid;grid-template-columns:auto 1fr;gap:3px 9px;align-items:baseline;}
-.fl{color:var(--muted);font-family:var(--mono);font-size:10px;white-space:nowrap;}
-.fv{font-family:var(--mono);font-size:11px;word-break:break-all;}
-.fv.blue{color:var(--blue);}
-.fv.purple{color:var(--purple);}
+/* ── field rows ──────────────────────────────────────── */
+.fg{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;align-items:start;}
+.fl{color:var(--muted);font-family:var(--mono);font-size:10px;white-space:nowrap;padding-top:1px;}
+.fv{font-family:var(--mono);font-size:11px;word-break:break-all;line-height:1.5;}
+.fv.blue  {color:var(--blue);}
+.fv.green {color:var(--green);}
 .fv.orange{color:var(--orange);}
-.fv.green{color:var(--green);}
+.fv.purple{color:var(--purple);}
 .fv.yellow{color:var(--yellow);}
-.fv.red{color:var(--red);}
-.fv.muted{color:var(--muted);}
+.fv.red   {color:var(--red);}
+.fv.muted {color:var(--muted);}
 
-/* step list */
+/* ── step list ───────────────────────────────────────── */
 .slist{display:flex;flex-direction:column;gap:5px;}
-.srow{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:5px;background:var(--bg3);border:1px solid transparent;transition:border-color .2s;}
+.srow{
+  display:flex;align-items:flex-start;gap:8px;
+  padding:7px 9px;border-radius:5px;
+  background:var(--bg3);border:1px solid transparent;
+  transition:border-color .2s;
+}
+.srow.pending{opacity:.35;}
 .srow.active{border-color:var(--yellow);}
 .srow.done{border-color:var(--green);}
-.srow.pending{opacity:.38;}
-.sicon{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;background:var(--bg);flex-shrink:0;margin-top:1px;}
+.sicon{
+  width:18px;height:18px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;background:var(--bg);flex-shrink:0;margin-top:1px;
+}
 .srow.active .sicon{background:#3a2f00;color:var(--yellow);}
 .srow.done   .sicon{background:#1a3a2a;color:var(--green);}
 .stext{flex:1;font-size:11px;line-height:1.45;}
-.stext small{color:var(--muted);font-size:10px;display:block;margin-top:2px;}
-.sms{font-family:var(--mono);font-size:10px;flex-shrink:0;padding-top:1px;}
+.stext small{color:var(--muted);font-size:10px;display:block;margin-top:2px;font-family:var(--mono);}
+.sms{font-family:var(--mono);font-size:10px;flex-shrink:0;padding-top:2px;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.spinner{width:11px;height:11px;border:2px solid var(--border);border-top-color:var(--yellow);border-radius:50%;animation:spin .6s linear infinite;display:inline-block;}
+.spin{
+  width:11px;height:11px;border:2px solid var(--border);
+  border-top-color:var(--yellow);border-radius:50%;
+  animation:spin .6s linear infinite;display:inline-block;
+}
 
-/* buttons */
-.brow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex-shrink:0;}
-button.pri{background:var(--blue);color:#000;border:none;border-radius:5px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;transition:opacity .15s;}
-button.pri:hover{opacity:.85;}
-button.pri:disabled{opacity:.38;cursor:not-allowed;}
-button.pri.grn{background:var(--green);}
-button.pri.orn{background:var(--orange);}
-button.pri.red{background:var(--red);}
-button.sec{background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:6px 12px;font-size:11px;cursor:pointer;}
-button.sec:disabled{opacity:.38;cursor:not-allowed;}
-.tinput{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:5px 9px;color:var(--text);font-family:var(--mono);font-size:11px;outline:none;transition:border-color .15s;}
-.tinput:focus{border-color:var(--blue);}
+/* ── hex block ───────────────────────────────────────── */
+.hexblock{
+  font-family:var(--mono);font-size:10px;
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:4px;padding:6px 9px;word-break:break-all;
+  line-height:1.6;color:var(--muted);
+}
+.hexblock .hl{color:var(--blue);}
+.hexblock .hl.green{color:var(--green);}
+.hexblock .hl.orange{color:var(--orange);}
+.hexblock .hl.purple{color:var(--purple);}
 
-/* notice */
-.notice{background:var(--bg3);border-left:3px solid var(--yellow);border-radius:0 5px 5px 0;padding:7px 10px;font-size:11px;color:var(--muted);line-height:1.5;flex-shrink:0;}
-.notice.green{border-left-color:var(--green);}
-.notice.blue{border-left-color:var(--blue);}
-.notice.red{border-left-color:var(--red);}
+/* ── packet box ──────────────────────────────────────── */
+.pkt{
+  background:var(--bg);border:1px solid var(--purple);
+  border-radius:5px;padding:9px 11px;
+  font-family:var(--mono);font-size:10px;line-height:1.75;
+}
+.pkt-sec{
+  font-size:9px;letter-spacing:.5px;text-transform:uppercase;
+  color:var(--muted);margin-top:8px;
+}
+.pkt-sec:first-child{margin-top:0;}
+.pkt-total{
+  display:inline-block;background:#2a1a4a;color:var(--purple);
+  padding:2px 8px;border-radius:4px;font-size:10px;margin-top:7px;
+}
 
-/* badges */
-.badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;}
+/* ── merkle tree ─────────────────────────────────────── */
+.mt-chain{display:flex;flex-direction:column;gap:0;}
+.mt-level{
+  border:1px solid var(--border);border-radius:6px;overflow:hidden;
+  background:var(--bg2);flex-shrink:0;
+}
+.mt-level + .mt-level{margin-top:4px;}
+.mt-level-hdr{
+  font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+  color:var(--muted);padding:4px 9px;background:var(--bg3);
+  border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;
+}
+.mt-arrow{
+  font-size:16px;text-align:center;padding:2px;color:var(--muted);flex-shrink:0;line-height:1;
+}
+.mt-inputs{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:7px 9px;}
+.mt-node{
+  border-radius:4px;padding:5px 7px;
+  font-family:var(--mono);font-size:10px;
+  border:1px solid var(--border);
+}
+.mt-node.your{background:#1f3a5f;border-color:var(--blue);color:var(--blue);}
+.mt-node.sib {background:var(--bg3);color:var(--muted);}
+.mt-node.leaf{background:#3a2000;border-color:var(--orange);color:var(--orange);}
+.mt-node.root{background:#1a3a2a;border-color:var(--green);color:var(--green);}
+.mt-node .nlabel{font-size:9px;opacity:.7;display:block;margin-bottom:2px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;}
+.mt-parent{padding:5px 9px;border-top:1px solid var(--border);}
+
+/* ── progress bar ────────────────────────────────────── */
+.pbar-wrap{background:var(--bg3);border-radius:3px;height:7px;overflow:hidden;}
+.pbar{height:100%;border-radius:3px;transition:width .35s;background:var(--blue);}
+.pbar.orange{background:var(--orange);}
+.pbar.green{background:var(--green);}
+
+/* ── RABA columns ────────────────────────────────────── */
+.raba-col{
+  display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;
+}
+.raba-col:last-child{border-right:none;}
+.raba-hdr{
+  padding:9px 12px;font-weight:700;font-size:12px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.raba-hdr.E{background:#1a0e0e;border-bottom-color:#3a1515;}
+.raba-hdr.W{background:#1a1600;border-bottom-color:#3a3000;}
+.raba-hdr.R{background:#0e1a0e;border-bottom-color:#1a3a1a;}
+.rc-E{color:var(--red);}
+.rc-W{color:var(--yellow);}
+.rc-R{color:var(--green);}
+.raba-body{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:7px;}
+.big-num{font-size:32px;font-weight:700;font-family:var(--mono);line-height:1;}
+
+/* ── timing compare bars ─────────────────────────────── */
+.trow{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+.t-label{width:58px;font-size:10px;color:var(--muted);flex-shrink:0;}
+.t-barwrap{flex:1;background:var(--bg3);border-radius:3px;height:16px;overflow:hidden;}
+.t-bar{height:100%;border-radius:3px;display:flex;align-items:center;padding-left:6px;font-size:10px;font-weight:700;transition:width .6s;min-width:24px;}
+.t-bar.seq  {background:#3a1a1a;color:var(--red);}
+.t-bar.batch{background:#1a3a2a;color:var(--green);}
+.t-bar.indiv{background:#3a2a00;color:var(--yellow);}
+.speedup{
+  display:inline-flex;align-items:center;gap:3px;
+  background:#1a3a2a;color:var(--green);border:1px solid #2a5a3a;
+  padding:2px 9px;border-radius:20px;font-size:12px;font-weight:700;
+}
+
+/* ── deadline bar ────────────────────────────────────── */
+.dl-wrap{background:var(--bg3);border-radius:3px;height:6px;margin-top:4px;}
+.dl-fill{height:100%;border-radius:3px;transition:width .6s;}
+
+/* ── notice ──────────────────────────────────────────── */
+.notice{
+  background:var(--bg3);border-left:3px solid var(--yellow);
+  padding:7px 10px;font-size:11px;color:var(--muted);line-height:1.5;flex-shrink:0;
+  border-radius:0 4px 4px 0;
+}
+.notice.blue  {border-left-color:var(--blue);}
+.notice.green {border-left-color:var(--green);}
+
+/* ── badge ───────────────────────────────────────────── */
+.badge{display:inline-block;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:600;}
 .badge.g{background:#1a3a2a;color:var(--green);}
 .badge.r{background:#3a1a1a;color:var(--red);}
 .badge.b{background:#1a2a4a;color:var(--blue);}
@@ -120,295 +318,527 @@ button.sec:disabled{opacity:.38;cursor:not-allowed;}
 .badge.p{background:#2a1a4a;color:var(--purple);}
 .badge.o{background:#3a2000;color:var(--orange);}
 
-/* progress bar */
-.pbar-wrap{background:var(--bg3);border-radius:4px;height:8px;overflow:hidden;}
-.pbar{height:100%;border-radius:4px;transition:width .35s;background:var(--blue);}
+/* ── overview page ───────────────────────────────────── */
+#p0{background:var(--bg);}
+.overview-inner{
+  flex:1;overflow-y:auto;
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:20px;padding:20px;
+}
+.ov-title{font-size:22px;font-weight:700;text-align:center;line-height:1.3;}
+.ov-title em{color:var(--blue);font-style:normal;}
+.ov-sub{font-size:12px;color:var(--muted);text-align:center;max-width:520px;line-height:1.6;}
 
-/* packet view */
-.packet{background:var(--bg);border:1px solid var(--purple);border-radius:5px;padding:9px 11px;font-family:var(--mono);font-size:10px;line-height:1.8;}
-.pkt-sec{color:var(--muted);font-size:9px;letter-spacing:.5px;text-transform:uppercase;margin-top:7px;}
-.pkt-sec:first-child{margin-top:0;}
-.pbytes{display:inline-block;background:#2a1a4a;color:var(--purple);padding:2px 8px;border-radius:4px;font-size:10px;margin-top:6px;}
+.sys-diagram{
+  display:flex;align-items:center;gap:0;
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:8px;padding:16px 20px;
+}
+.sys-node{
+  display:flex;flex-direction:column;align-items:center;gap:5px;min-width:88px;
+}
+.sys-node .sn-box{
+  width:72px;height:72px;border-radius:10px;border:2px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  background:var(--bg3);font-size:10px;font-weight:700;
+}
+.sys-node .sn-label{font-size:10px;color:var(--muted);}
+.sys-arrow{display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 8px;}
+.sys-arrow .ar-line{height:2px;width:40px;background:var(--border);}
+.sys-arrow .ar-label{font-size:9px;color:var(--muted);white-space:nowrap;}
 
-/* timing bars */
-.trow{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
-.tlabel{width:60px;font-size:10px;color:var(--muted);flex-shrink:0;}
-.tbar-w{flex:1;background:var(--bg3);border-radius:3px;height:16px;overflow:hidden;}
-.tbar{height:100%;border-radius:3px;display:flex;align-items:center;padding-left:7px;font-size:10px;font-weight:700;transition:width .6s ease;min-width:30px;}
-.tbar.seq{background:#3a2020;color:var(--red);}
-.tbar.batch{background:#1a3a2a;color:var(--green);}
-.tbar.indiv{background:#3a2a00;color:var(--yellow);}
-.speedup-pill{display:inline-flex;align-items:center;gap:4px;background:#1a3a2a;color:var(--green);border:1px solid #2a5a3a;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700;}
+.stats-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;max-width:640px;
+}
+.stat-box{
+  background:var(--bg2);border:1px solid var(--border);border-radius:6px;
+  padding:10px;text-align:center;
+}
+.stat-box .sv{font-size:18px;font-weight:700;font-family:var(--mono);}
+.stat-box .sl{font-size:10px;color:var(--muted);margin-top:3px;}
 
-/* RABA queue columns */
-.raba-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;flex-shrink:0;}
-.qcol{background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
-.qhdr{padding:7px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;}
-.qhdr .qlabel{font-size:11px;font-weight:700;}
-.qhdr.E-hdr{background:#1a0f0f;border-bottom-color:#3a1a1a;}
-.qhdr.W-hdr{background:#1a1600;border-bottom-color:#3a3000;}
-.qhdr.R-hdr{background:#0f1a0f;border-bottom-color:#1a3a1a;}
-.qlabel.E{color:var(--red);}
-.qlabel.W{color:var(--yellow);}
-.qlabel.R{color:var(--green);}
-.qbody{padding:8px 10px;display:flex;flex-direction:column;gap:6px;}
-.qcount{font-size:20px;font-weight:700;font-family:var(--mono);}
-.qcount.E{color:var(--red);}
-.qcount.W{color:var(--yellow);}
-.qcount.R{color:var(--green);}
-.qstat{font-size:10px;color:var(--muted);}
-.deadline-bar{background:var(--bg3);border-radius:3px;height:6px;overflow:hidden;margin-top:3px;}
-.deadline-fill{height:100%;border-radius:3px;transition:width .6s;}
-.budget-label{font-size:10px;font-family:var(--mono);margin-top:3px;}
-
-/* pairing count boxes */
-.pcmp{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
-.pbox{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:7px;text-align:center;}
-.pbox .big{font-size:22px;font-weight:700;font-family:var(--mono);}
-.pbox .sub{font-size:9px;color:var(--muted);margin-top:2px;}
-.pbox.seq .big{color:var(--red);}
-.pbox.batch .big{color:var(--green);}
-
-/* k slider */
-.krow{display:flex;align-items:center;gap:8px;}
+/* ── k slider ────────────────────────────────────────── */
+.krow{display:flex;align-items:center;gap:9px;flex:1;}
 input[type=range]{flex:1;accent-color:var(--blue);}
-.kval{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--blue);width:22px;text-align:right;}
-
-/* graph callout */
-.graph-ref{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:5px 10px;font-size:10px;color:var(--muted);flex-shrink:0;}
-.graph-ref strong{color:var(--blue);}
+.kval{font-family:var(--mono);font-weight:700;font-size:14px;color:var(--blue);width:20px;}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="h-title">ULP-V2V-Auth <span>Live Demo</span></div>
-  <div class="h-right">
-    <span class="h-device" id="devInfo">Loading…</span>
+<!-- ── top bar ─────────────────────────────────────────── -->
+<div id="topbar">
+  <h1>ULP-V2V-Auth <em>Live Demo</em></h1>
+
+  <div class="phase-nav" id="phaseNav">
+    <div class="pnav-dot active" id="pnd0" onclick="goPage(0)">○</div>
+    <div class="pnav-line" id="pnl0"></div>
+    <div class="pnav-dot" id="pnd1" onclick="goPage(1)">1</div>
+    <div class="pnav-line" id="pnl1"></div>
+    <div class="pnav-dot" id="pnd2" onclick="goPage(2)">2</div>
+    <div class="pnav-line" id="pnl2"></div>
+    <div class="pnav-dot" id="pnd3" onclick="goPage(3)">3</div>
+    <div class="pnav-line" id="pnl3"></div>
+    <div class="pnav-dot" id="pnd4" onclick="goPage(4)">4</div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:9px">
+    <span id="devBadge">—</span>
     <div class="ws-pill">
       <div class="ws-dot" id="wsDot"></div>
       <span id="wsLabel">Connecting…</span>
     </div>
   </div>
-</header>
-
-<div class="tabs">
-  <button class="tab active" onclick="showTab(0)">
-    <div class="ph-num" id="ph1num">1</div>
-    <div class="tab-info"><div class="t-title">Registration</div><div class="t-sub">One-time at manufacture</div></div>
-    <div class="ph-dot" id="dot0"></div>
-  </button>
-  <button class="tab" onclick="showTab(1)">
-    <div class="ph-num" id="ph2num">2</div>
-    <div class="tab-info"><div class="t-title">AST Acquisition</div><div class="t-sub">Offline precomputation</div></div>
-    <div class="ph-dot" id="dot1"></div>
-  </button>
-  <button class="tab" onclick="showTab(2)">
-    <div class="ph-num" id="ph3num">3</div>
-    <div class="tab-info"><div class="t-title">Online Auth</div><div class="t-sub">~0.2 ms per BSM</div></div>
-    <div class="ph-dot" id="dot2"></div>
-  </button>
-  <button class="tab" onclick="showTab(3)">
-    <div class="ph-num" id="ph4num">4</div>
-    <div class="tab-info"><div class="t-title">RABA</div><div class="t-sub">Batch auth · 3 queues</div></div>
-    <div class="ph-dot" id="dot3"></div>
-  </button>
 </div>
 
-<main>
+<!-- ── pages ───────────────────────────────────────────── -->
+<div id="pages">
 
-<!-- ══════════════════════════════════════════════════════
-     PHASE 1 — Registration
-     ══════════════════════════════════════════════════════ -->
-<div class="view active col2" id="v0">
-  <div class="panel">
-    <div class="ph"><span class="plabel pl-obu">OBU</span><h2>Vehicle Side</h2></div>
-    <div class="pbody">
-      <div class="brow">
-        <input class="tinput" id="vinInput" value="VIN-TH-2024-001" style="width:160px">
-        <button class="pri" id="btnReg" onclick="doRegister()">Register</button>
+<!-- ════════════════════════════════════════════════════════
+     PAGE 0 — Overview
+     ════════════════════════════════════════════════════════ -->
+<div class="page active" id="p0">
+  <div class="overview-inner">
+    <div class="ov-title">
+      <em>ULP-V2V-Auth</em><br>
+      Ultra-Low-Latency Privacy-Preserving<br>V2V Authentication
+    </div>
+    <div class="ov-sub">
+      Groth16 zk-SNARK on BN254 · depth-8 Poseidon Merkle tree · RABA batch scheduler<br>
+      4-phase protocol running live on Raspberry Pi 4 (ARM Cortex-A72 @ 1.8 GHz)
+    </div>
+
+    <div class="sys-diagram">
+      <div class="sys-node">
+        <div class="sn-box" style="border-color:var(--purple)">
+          <span style="font-size:20px">🏛</span>
+          <span style="color:var(--purple)">TA</span>
+        </div>
+        <span class="sn-label">Trusted Authority</span>
       </div>
-      <div class="notice">Phase 1 executes once at manufacture. The TA signs a credential bound to the vehicle's public key — not its VIN — so it is unlinkable to any real identity.</div>
-      <div class="card">
-        <div class="ctitle">Protocol Steps</div>
-        <div class="cbody"><div class="slist" id="regSteps"></div></div>
+      <div class="sys-arrow">
+        <div class="ar-line"></div>
+        <div class="ar-label">Phase 1 &amp; 2</div>
+      </div>
+      <div class="sys-node">
+        <div class="sn-box" style="border-color:var(--orange)">
+          <span style="font-size:20px">📡</span>
+          <span style="color:var(--orange)">AIS</span>
+        </div>
+        <span class="sn-label">RSU / AIS</span>
+      </div>
+      <div class="sys-arrow">
+        <div class="ar-line"></div>
+        <div class="ar-label">AST + proof</div>
+      </div>
+      <div class="sys-node">
+        <div class="sn-box" style="border-color:var(--blue)">
+          <span style="font-size:20px">🚗</span>
+          <span style="color:var(--blue)">V<sub>P</sub></span>
+        </div>
+        <span class="sn-label">Prover Vehicle</span>
+      </div>
+      <div class="sys-arrow">
+        <div class="ar-line"></div>
+        <div class="ar-label" style="color:var(--green)">BSM + σ_ot</div>
+      </div>
+      <div class="sys-node">
+        <div class="sn-box" style="border-color:var(--green)">
+          <span style="font-size:20px">🚙</span>
+          <span style="color:var(--green)">V<sub>V</sub></span>
+        </div>
+        <span class="sn-label">Verifier Vehicle</span>
       </div>
     </div>
+
+    <div class="stats-grid">
+      <div class="stat-box"><div class="sv" style="color:var(--green)">0.197 ms</div><div class="sl">Sender cost / BSM</div></div>
+      <div class="stat-box"><div class="sv" style="color:var(--blue)">39.6 ms</div><div class="sl">Single-msg verify</div></div>
+      <div class="stat-box"><div class="sv" style="color:var(--purple)">128 B</div><div class="sl">Groth16 proof size</div></div>
+      <div class="stat-box"><div class="sv" style="color:var(--orange)">529 B</div><div class="sl">Full BSM packet</div></div>
+    </div>
+
+    <div class="notice blue" style="max-width:580px">
+      Walk through the 4 phases using the navigation below. Each phase shows
+      <strong>real cryptographic values</strong> computed on this device right now —
+      Poseidon hashes, Groth16 proofs, and ECDSA signatures.
+    </div>
   </div>
-  <div class="panel">
-    <div class="ph"><span class="plabel pl-ta">TA</span><h2>Trusted Authority</h2></div>
-    <div class="pbody">
-      <div class="notice blue">TA maintains the global Merkle revocation tree and signs anonymous credentials σ<sub>i</sub> = Sign<sub>sk_TA</sub>(H(pk<sub>i</sub> ∥ nonce)).</div>
-      <div class="card" id="credCard" style="display:none">
-        <div class="ctitle">Stored Credential (OBU tamper-proof module)</div>
-        <div class="cbody">
-          <div class="fg" id="credFg"></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     PAGE 1 — Registration
+     ════════════════════════════════════════════════════════ -->
+<div class="page phase-1" id="p1">
+  <div class="page-hdr">
+    <span class="ph-badge">Phase 1</span>
+    <h2>Vehicle Registration</h2>
+    <span class="ph-sub">— one-time at manufacture, establishes long-term identity</span>
+  </div>
+  <div class="cols c2" style="flex:1">
+
+    <!-- Left: OBU steps -->
+    <div class="col">
+      <div class="col-hdr"><span class="entity e-obu">OBU</span><h3>Vehicle (Prover)</h3></div>
+      <div class="scroll">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input id="vinInput" style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:5px 9px;color:var(--text);font-family:var(--mono);font-size:11px;width:160px;outline:none"
+            value="VIN-TH-2024-001">
+          <button class="action-btn blue" id="btnReg" onclick="doRegister()">Register Vehicle</button>
+        </div>
+        <div class="notice">
+          Registration happens once at manufacture. The TA signs a credential
+          σ<sub>i</sub> = Sign<sub>sk_TA</sub>(H(pk<sub>i</sub> ∥ nonce)) bound to the vehicle's
+          <em>public key</em>, not its VIN — making it cryptographically unlinkable.
+        </div>
+        <div class="card">
+          <div class="card-title">Protocol Steps</div>
+          <div class="card-body"><div class="slist" id="regSteps"></div></div>
         </div>
       </div>
-      <div class="graph-ref"><strong>Slide Graph 1:</strong> Sender cost = ECDSA sign only ≈ 0.197 ms — enabled by this one-time pre-registration.</div>
     </div>
-  </div>
-</div>
 
-<!-- ══════════════════════════════════════════════════════
-     PHASE 2 — AST Acquisition
-     ══════════════════════════════════════════════════════ -->
-<div class="view col2" id="v1">
-  <div class="panel">
-    <div class="ph"><span class="plabel pl-ais">AIS</span><h2>AST Issuing Service (RSU)</h2></div>
-    <div class="pbody">
-      <div class="brow">
-        <button class="pri orn" id="btnAcq" onclick="doAcquire()">Acquire AST</button>
-        <span id="acqNote" style="font-size:10px;color:var(--muted)">Run Phase 1 first</span>
-      </div>
-      <div class="notice">AIS manages a depth-8 Poseidon Merkle subtree (256 leaves). Vehicle proves credential possession via ZKP, then gets an Anonymous Session Token + Merkle inclusion proof.</div>
-      <div class="card">
-        <div class="ctitle">Protocol Steps</div>
-        <div class="cbody"><div class="slist" id="acqSteps"></div></div>
-      </div>
-    </div>
-  </div>
-  <div class="panel">
-    <div class="ph"><span class="plabel pl-obu">OBU</span><h2>Offline Precomputation</h2></div>
-    <div class="pbody">
-      <div class="card" id="merkleCard" style="display:none">
-        <div class="ctitle">Depth-8 Merkle Tree (Poseidon, 256 leaves)</div>
-        <div class="cbody"><div class="fg" id="merkleFg"></div></div>
-      </div>
-      <div class="card" id="bridgeCard" style="display:none">
-        <div class="ctitle">Bridge Path π<sup>bridge</sup> → R<sub>global</sub></div>
-        <div class="cbody"><div class="fg" id="bridgeFg"></div></div>
-      </div>
-      <div class="card" id="cacheCard" style="display:none">
-        <div class="ctitle">Proof-Slot Cache Fill</div>
-        <div class="cbody">
-          <div id="cacheSlots" class="slist"></div>
-          <div style="margin-top:7px">
-            <div class="pbar-wrap"><div class="pbar" id="cacheBar" style="width:0%"></div></div>
+    <!-- Right: Credential output -->
+    <div class="col">
+      <div class="col-hdr"><span class="entity e-ta">TA</span><h3>Trusted Authority · Credential Issued</h3></div>
+      <div class="scroll">
+        <div class="notice blue">
+          All values below are computed by this demo in real time.
+          The hex strings are real BN254 field elements and ECDSA values.
+        </div>
+
+        <div class="card" id="sk_card" style="display:none">
+          <div class="card-title">🔴 Long-term Private Key (sk<sub>i</sub>) — OBU tamper-proof storage</div>
+          <div class="card-body">
+            <div class="hexblock"><span class="hl orange" id="sk_hex"></span></div>
+            <div style="margin-top:5px;font-size:10px;color:var(--muted)">256-bit BN254 scalar · never leaves OBU</div>
           </div>
-          <div class="fg" id="cacheFg" style="margin-top:8px"></div>
+        </div>
+
+        <div class="card" id="pk_card" style="display:none">
+          <div class="card-title">🔵 Public Key (pk<sub>i</sub>) — G1 point on BN254</div>
+          <div class="card-body">
+            <div class="fg">
+              <div class="fl">x</div><div class="fv blue" id="pk_x"></div>
+              <div class="fl">y</div><div class="fv blue" id="pk_y"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="nonce_card" style="display:none">
+          <div class="card-title">TA nonce (256-bit random)</div>
+          <div class="card-body">
+            <div class="hexblock"><span class="hl" id="nonce_hex"></span></div>
+          </div>
+        </div>
+
+        <div class="card" id="sigma_card" style="display:none">
+          <div class="card-title">🟣 Anonymous Credential σ<sub>i</sub> = Sign<sub>sk_TA</sub>(H(pk ∥ nonce))</div>
+          <div class="card-body">
+            <div class="fg">
+              <div class="fl">r</div><div class="fv purple" id="sigma_r"></div>
+              <div class="fl">s</div><div class="fv purple" id="sigma_s"></div>
+              <div class="fl">pk_TA</div><div class="fv muted" id="pk_ta"></div>
+            </div>
+            <div style="margin-top:8px;font-size:10px;color:var(--muted)">
+              Stored in OBU. Used in Phase 2 ZKP to prove registration without revealing VIN.
+            </div>
+          </div>
         </div>
       </div>
-      <div class="graph-ref"><strong>Slide Graph 2:</strong> Cumulative sender CPU — offline slots are the cost paid before driving, not per-BSM.</div>
     </div>
+
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
-     PHASE 3 — Online Authentication
-     ══════════════════════════════════════════════════════ -->
-<div class="view col2" id="v2">
-  <div class="panel">
-    <div class="ph"><span class="plabel pl-obu">V_P</span><h2>Prover Vehicle (sender)</h2></div>
-    <div class="pbody">
-      <div class="brow">
-        <button class="pri grn" id="btnBSM" onclick="doBSM()" disabled>Send BSM</button>
-        <span id="bsmNote" style="font-size:10px;color:var(--muted)">Run Phase 2 first</span>
-      </div>
-      <div class="notice green">Online cost is <strong>one ECDSA-P256 sign</strong> only (~0.197 ms). The Groth16 proof is pre-cached from Phase 2 — no ZK computation happens here.</div>
-      <div class="card">
-        <div class="ctitle">Online Steps (per-BSM)</div>
-        <div class="cbody"><div class="slist" id="onlineProver"></div></div>
-      </div>
-      <div class="card" id="packetCard" style="display:none">
-        <div class="ctitle">Broadcast Packet Composition</div>
-        <div class="cbody">
-          <div class="packet" id="packetView"></div>
-        </div>
-      </div>
-      <div class="graph-ref"><strong>Slide Graph 1 + 2:</strong> Sender cost = dequeue + ECDSA sign ≈ 0.197 ms per BSM.</div>
-    </div>
+<!-- ════════════════════════════════════════════════════════
+     PAGE 2 — AST Acquisition
+     ════════════════════════════════════════════════════════ -->
+<div class="page phase-2" id="p2">
+  <div class="page-hdr">
+    <span class="ph-badge">Phase 2</span>
+    <h2>AST Acquisition &amp; Offline Precomputation</h2>
+    <span class="ph-sub">— periodic, when vehicle contacts RSU</span>
   </div>
-  <div class="panel">
-    <div class="ph"><span class="plabel pl-rcv">V_V</span><h2>Verifier Vehicle (receiver)</h2></div>
-    <div class="pbody">
-      <div class="notice">Receiver performs 3 lightweight checks in sequence. Groth16 verify uses the pre-generated proof from the prover's cache.</div>
-      <div class="card">
-        <div class="ctitle">Receiver Steps</div>
-        <div class="cbody"><div class="slist" id="onlineRecv"></div></div>
-      </div>
-      <div class="card" id="onlineSummary" style="display:none">
-        <div class="ctitle">Timing Summary</div>
-        <div class="cbody">
-          <div class="fg" id="onlineFg"></div>
-          <div style="margin-top:9px" id="onlineBars"></div>
+  <div class="cols c2" style="flex:1">
+
+    <!-- Left: Steps + cache -->
+    <div class="col">
+      <div class="col-hdr"><span class="entity e-ais">AIS</span><h3>AST Issuing Service (RSU)</h3></div>
+      <div class="scroll">
+        <button class="action-btn orange" id="btnAcq" onclick="doAcquire()" disabled>Acquire AST + Fill Cache</button>
+        <div class="notice">
+          AIS manages a depth-8 Poseidon Merkle subtree (256 leaves, ~1–2 km highway zone).
+          Vehicle proves credential without revealing identity, then receives an Anonymous Session
+          Token and Merkle inclusion proof.
+        </div>
+        <div class="card">
+          <div class="card-title">Protocol Steps</div>
+          <div class="card-body"><div class="slist" id="acqSteps"></div></div>
+        </div>
+        <div class="card" id="cacheCard" style="display:none">
+          <div class="card-title">Proof-Slot Cache Fill (offline)</div>
+          <div class="card-body">
+            <div class="pbar-wrap"><div class="pbar orange" id="cacheBar" style="width:0%"></div></div>
+            <div style="margin-top:6px;font-size:10px;color:var(--muted)" id="cacheInfo"></div>
+            <div class="slist" style="margin-top:8px" id="cacheSlots"></div>
+            <div class="card" style="margin-top:8px" id="slotProofCard" style="display:none">
+              <div class="card-title">First Proof Slot (real Groth16, BN254)</div>
+              <div class="card-body">
+                <div class="fg">
+                  <div class="fl">π.A (G1.x)</div><div class="fv purple" id="pi_a"></div>
+                  <div class="fl">π.B (G2.x₀)</div><div class="fv purple" id="pi_b"></div>
+                  <div class="fl">π.C (G1.x)</div><div class="fv purple" id="pi_c"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="graph-ref"><strong>Slide Graph 3:</strong> Single-message auth latency = Groth16 verify ≈ 39.6 ms (1.89× faster than Wu et al.).</div>
     </div>
+
+    <!-- Right: Merkle tree -->
+    <div class="col">
+      <div class="col-hdr"><span class="entity e-obu">OBU</span><h3>Merkle Inclusion Proof (depth-8, Poseidon)</h3></div>
+      <div class="scroll">
+        <div class="notice blue">
+          The AST leaf is computed as H<sub>Pos</sub>(sid ∥ t_start ∥ t_end ∥ cap ∥ r).
+          The proof path shows the 8 sibling hashes needed to recompute the root from this leaf.
+        </div>
+        <div id="astFieldsCard" style="display:none" class="card">
+          <div class="card-title">AST Fields (circuit private inputs)</div>
+          <div class="card-body">
+            <div class="fg" id="astFieldsFg"></div>
+          </div>
+        </div>
+        <div id="merkleTree" style="display:none">
+          <div class="card" style="margin-bottom:9px">
+            <div class="card-title">🟢 Merkle Root R<sub>local</sub> (Groth16 public input)</div>
+            <div class="card-body">
+              <div class="hexblock"><span class="hl green" id="rootHex"></span></div>
+            </div>
+          </div>
+          <div style="text-align:center;font-size:10px;color:var(--muted);margin-bottom:5px">
+            ↑ root = Poseidon(path) · scroll down to see leaf ↓
+          </div>
+          <div class="mt-chain" id="mtChain"></div>
+          <div class="card" style="margin-top:9px">
+            <div class="card-title">🟠 AST Leaf Hash = Poseidon(sid, t_start, t_end, cap, r)</div>
+            <div class="card-body">
+              <div class="hexblock"><span class="hl orange" id="leafHex"></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
-     PHASE 4 — RABA
-     ══════════════════════════════════════════════════════ -->
-<div class="view col2" id="v3">
-  <div class="panel">
-    <div class="ph"><span class="plabel pl-raba">RABA</span><h2>Scheduler — Proof Collection</h2></div>
-    <div class="pbody">
-      <div class="brow">
-        <div class="krow" style="flex:1">
-          <span style="font-size:11px;color:var(--muted)">k =</span>
-          <input type="range" id="kSlider" min="3" max="12" value="6" oninput="document.getElementById('kVal').textContent=this.value">
-          <span class="kval" id="kVal">6</span>
-          <span style="font-size:10px;color:var(--muted)">proofs</span>
-        </div>
-        <button class="pri" id="btnRaba" onclick="doRABA()" disabled>Run RABA</button>
-      </div>
-      <div class="notice">Each of the k proofs represents one neighbour vehicle's authenticated BSM arriving in the same 100 ms window. RABA classifies them by priority and batch-verifies each class within its deadline.</div>
-      <div class="card" id="rabaGenCard" style="display:none">
-        <div class="ctitle">Proof Generation (offline cost — shown for authenticity)</div>
-        <div class="cbody">
-          <div class="pbar-wrap"><div class="pbar" id="rabaBar" style="width:0%"></div></div>
-          <div style="margin-top:6px;font-size:10px;color:var(--muted)" id="rabaGenInfo"></div>
-          <div class="slist" style="margin-top:8px" id="rabaGenList"></div>
-        </div>
-      </div>
-    </div>
+<!-- ════════════════════════════════════════════════════════
+     PAGE 3 — Online Authentication
+     ════════════════════════════════════════════════════════ -->
+<div class="page phase-3" id="p3">
+  <div class="page-hdr">
+    <span class="ph-badge">Phase 3</span>
+    <h2>Online V2V Authentication</h2>
+    <span class="ph-sub">— per BSM, every 100 ms while driving</span>
   </div>
-  <div class="panel">
-    <div class="ph"><span class="plabel pl-rcv">V_V</span><h2>RABA Scheduler — Verification</h2></div>
-    <div class="pbody">
-      <div class="notice blue">EDF order within each class. Emergency verified individually; Warning + Routine batch-verified with Groth16 true batch check (k+3 pairings vs 3k sequential).</div>
-      <div class="raba-grid" id="rabaQueues" style="display:none">
-        <div class="qcol" id="qE">
-          <div class="qhdr E-hdr"><span class="qlabel E">Emergency</span><span class="badge r" style="margin-left:auto;font-size:9px">D=200ms</span></div>
-          <div class="qbody" id="qBodyE"><div class="qcount E" id="qcE">—</div><div class="qstat" id="qsE">waiting…</div></div>
+  <div class="cols c2" style="flex:1">
+
+    <!-- Left: Prover -->
+    <div class="col">
+      <div class="col-hdr"><span class="entity e-obu">V<sub>P</sub></span><h3>Prover Vehicle — online cost ≈ 0.197 ms</h3></div>
+      <div class="scroll">
+        <button class="action-btn green" id="btnBSM" onclick="doBSM()" disabled>Send Authenticated BSM</button>
+        <div class="notice green">
+          <strong>Key insight:</strong> The Groth16 proof was pre-generated in Phase 2.
+          Online cost is <em>one ECDSA-P256 sign only</em> — no ZK computation at all.
         </div>
-        <div class="qcol" id="qW">
-          <div class="qhdr W-hdr"><span class="qlabel W">Warning</span><span class="badge y" style="margin-left:auto;font-size:9px">D=500ms</span></div>
-          <div class="qbody" id="qBodyW"><div class="qcount W" id="qcW">—</div><div class="qstat" id="qsW">waiting…</div></div>
+        <div class="card">
+          <div class="card-title">Prover Online Steps</div>
+          <div class="card-body"><div class="slist" id="proverSteps"></div></div>
         </div>
-        <div class="qcol" id="qR">
-          <div class="qhdr R-hdr"><span class="qlabel R">Routine</span><span class="badge g" style="margin-left:auto;font-size:9px">D=2000ms</span></div>
-          <div class="qbody" id="qBodyR"><div class="qcount R" id="qcR">—</div><div class="qstat" id="qsR">waiting…</div></div>
+        <div class="card" id="ecdsaCard" style="display:none">
+          <div class="card-title">✍ One-Time ECDSA-P256 Signature (real, measured)</div>
+          <div class="card-body">
+            <div class="fg">
+              <div class="fl">sk_ot</div><div class="fv orange" id="ot_sk"></div>
+              <div class="fl">pk_ot</div><div class="fv blue" id="ot_pk"></div>
+              <div class="fl">σ_ot</div><div class="fv purple" id="ot_sig"></div>
+              <div class="fl">payload</div><div class="fv muted" id="ot_payload"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card" id="packetCard" style="display:none">
+          <div class="card-title">📡 Broadcast Packet (529 bytes over IEEE 802.11p)</div>
+          <div class="card-body">
+            <div class="pkt" id="pktView"></div>
+          </div>
         </div>
       </div>
-      <div class="card" id="rabaResults" style="display:none">
-        <div class="ctitle">Batch Verification Results</div>
-        <div class="cbody" id="rabaResultBody"></div>
-      </div>
-      <div class="graph-ref"><strong>Slide Graph 4 + 5:</strong> Batch timing + speedup decomposition — actual measured values will appear above.</div>
-      <div class="graph-ref" style="margin-top:4px"><strong>Slide Graph 6:</strong> RABA deadline compliance — Budget% column shows how much of each class's deadline is consumed.</div>
     </div>
+
+    <!-- Right: Receiver -->
+    <div class="col">
+      <div class="col-hdr"><span class="entity e-rcv">V<sub>V</sub></span><h3>Verifier Vehicle — authentication pipeline</h3></div>
+      <div class="scroll">
+        <div class="notice">
+          Receiver runs 3 checks in order. Groth16 verify uses the proof from the prover's
+          cache — 4 pairings on BN254, one shared final exponentiation.
+        </div>
+        <div class="card">
+          <div class="card-title">Receiver Steps</div>
+          <div class="card-body"><div class="slist" id="recvSteps"></div></div>
+        </div>
+        <div class="card" id="g16Card" style="display:none">
+          <div class="card-title">⚡ Groth16 Verify — cached proof (BN254, 4 pairings)</div>
+          <div class="card-body">
+            <div class="fg">
+              <div class="fl">proof π.A</div><div class="fv purple" id="g16_pi"></div>
+            </div>
+            <div class="fg" style="margin-top:7px" id="g16Summary"></div>
+          </div>
+        </div>
+        <div class="card" id="timingSummary" style="display:none">
+          <div class="card-title">Timing Summary</div>
+          <div class="card-body" id="timingBody"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
-</main>
+<!-- ════════════════════════════════════════════════════════
+     PAGE 4 — RABA
+     ════════════════════════════════════════════════════════ -->
+<div class="page phase-4" id="p4">
+  <div class="page-hdr">
+    <span class="ph-badge">Phase 4</span>
+    <h2>RABA — Real-Time Adaptive Batch Authentication</h2>
+    <span class="ph-sub">— verifier processes k proofs per 100 ms window, 3 priority queues</span>
+  </div>
+  <div class="cols c3" style="flex:1">
 
+    <!-- Emergency -->
+    <div class="raba-col">
+      <div class="raba-hdr E">
+        <span class="rc-E">🚨 Emergency</span>
+        <span class="badge r">D = 200 ms</span>
+      </div>
+      <div class="raba-body" id="rabaE">
+        <div class="big-num rc-E" id="qcE">—</div>
+        <div style="font-size:11px;color:var(--muted)" id="qsE">5% of traffic</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">Individual verify<br>(fastest path, no batching overhead)</div>
+      </div>
+    </div>
+
+    <!-- Warning -->
+    <div class="raba-col">
+      <div class="raba-hdr W">
+        <span class="rc-W">⚠ Warning</span>
+        <span class="badge y">D = 500 ms</span>
+      </div>
+      <div class="raba-body" id="rabaW">
+        <div class="big-num rc-W" id="qcW">—</div>
+        <div style="font-size:11px;color:var(--muted)" id="qsW">25% of traffic</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">Groth16 true batch verify<br>(k+3 pairings vs 3k sequential)</div>
+      </div>
+    </div>
+
+    <!-- Routine -->
+    <div class="raba-col">
+      <div class="raba-hdr R">
+        <span class="rc-R">📋 Routine BSM</span>
+        <span class="badge g">D = 2000 ms</span>
+      </div>
+      <div class="raba-body" id="rabaR">
+        <div class="big-num rc-R" id="qcR">—</div>
+        <div style="font-size:11px;color:var(--muted)" id="qsR">70% of traffic</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">Groth16 true batch verify<br>Maximum speedup at scale</div>
+        <div style="margin-top:12px">
+          <div class="krow">
+            <span style="font-size:11px;color:var(--muted)">k =</span>
+            <input type="range" id="kSlider" min="3" max="12" value="6"
+              oninput="document.getElementById('kVal').textContent=this.value">
+            <span class="kval" id="kVal">6</span>
+            <span style="font-size:10px;color:var(--muted)">proofs</span>
+          </div>
+          <button class="action-btn yellow" id="btnRaba" onclick="doRABA()" disabled
+            style="margin-top:9px;width:100%">Run RABA Scheduler</button>
+        </div>
+        <div style="margin-top:9px" id="rabaGenProg"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /pages -->
+
+<!-- ── bottom nav ───────────────────────────────────────── -->
+<div id="botnav">
+  <button class="nav-btn" id="btnPrev" onclick="prevPage()" disabled>← Back</button>
+  <div id="botcenter">
+    <!-- action buttons injected per-page -->
+  </div>
+  <button class="nav-btn primary" id="btnNext" onclick="nextPage()">Next →</button>
+</div>
+
+<!-- ── cost bar ─────────────────────────────────────────── -->
+<div id="costbar">
+  <div class="cost-item offline">
+    <span class="cost-label">Phase 2 offline:</span>
+    <span class="cost-val" id="costOffline">— ms</span>
+    <span style="color:var(--muted)">cache fill</span>
+  </div>
+  <div class="cost-divider"></div>
+  <div class="cost-item online">
+    <span class="cost-label">Phase 3 online:</span>
+    <span class="cost-val" id="costOnline">— ms</span>
+    <span style="color:var(--muted)">/ BSM (deq + ECDSA)</span>
+  </div>
+  <div class="cost-divider"></div>
+  <div class="cost-item raba">
+    <span class="cost-label">Phase 4 RABA:</span>
+    <span class="cost-val" id="costRaba">—</span>
+  </div>
+  <div class="cost-divider"></div>
+  <span style="color:var(--muted);font-size:10px;margin-left:4px" id="costNote">
+    Run each phase to see accumulated cost
+  </span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
 <script>
-// ────────────────────────────────────────────────────────
-// State
-// ────────────────────────────────────────────────────────
-const S = { regDone: false, acqDone: false, bsmDone: false };
+// ── state ─────────────────────────────────────────────────
+const S = {
+    page      : 0,
+    regDone   : false,
+    acqDone   : false,
+    bsmCount  : 0,
+    raba      : null,
+    cost      : { offlineMs: null, onlineMs: null, rabaSeqMs: null, rabaBatchMs: null },
+};
 let ws;
 
-// ────────────────────────────────────────────────────────
-// WebSocket
-// ────────────────────────────────────────────────────────
+// ── navigation ────────────────────────────────────────────
+function goPage(n) {
+    S.page = n;
+    document.querySelectorAll(".page").forEach((p, i) => p.classList.toggle("active", i === n));
+    document.querySelectorAll(".pnav-dot").forEach((d, i) => {
+        d.classList.toggle("active", i === n);
+        if (i < n && i > 0) d.classList.add("done");
+    });
+    document.getElementById("btnPrev").disabled = (n === 0);
+    document.getElementById("btnNext").textContent = n === 4 ? "Done ✓" : "Next →";
+}
+function prevPage() { if (S.page > 0) goPage(S.page - 1); }
+function nextPage() { if (S.page < 4) goPage(S.page + 1); }
+
+// ── WebSocket ─────────────────────────────────────────────
 function connect() {
-    const url = `ws://${location.host}`;
-    ws = new WebSocket(url);
+    ws = new WebSocket(`ws://${location.host}`);
     ws.onopen = () => {
         document.getElementById("wsDot").classList.add("on");
         document.getElementById("wsLabel").textContent = "Connected";
@@ -419,415 +849,424 @@ function connect() {
         setTimeout(connect, 2000);
     };
     ws.onmessage = e => {
-        let msg; try { msg = JSON.parse(e.data); } catch { return; }
-        (handlers[msg.type] || (() => {}))(msg);
+        let m; try { m = JSON.parse(e.data); } catch { return; }
+        (handlers[m.type] || (() => {}))(m);
     };
 }
+function wsSend(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
 
-function send(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); }
-
-// ────────────────────────────────────────────────────────
-// Tab navigation
-// ────────────────────────────────────────────────────────
-function showTab(i) {
-    document.querySelectorAll(".view").forEach((v, j) => v.classList.toggle("active", j === i));
-    document.querySelectorAll(".tab").forEach((t, j) => t.classList.toggle("active", j === i));
-}
-
-// ────────────────────────────────────────────────────────
-// Step list helpers
-// ────────────────────────────────────────────────────────
-function makeStep(id, icon, text, sub = "", status = "pending") {
+// ── step list helpers ─────────────────────────────────────
+function mkStep(id, icon, label, sub) {
     const d = document.createElement("div");
-    d.className = `srow ${status}`; d.id = `step-${id}`;
+    d.className = "srow pending"; d.id = "s-" + id;
     d.innerHTML = `<div class="sicon">${icon}</div>
-      <div class="stext">${text}${sub ? `<small>${sub}</small>` : ""}</div>
+      <div class="stext">${label}${sub ? `<small>${sub}</small>` : ""}</div>
       <div class="sms" id="ms-${id}"></div>`;
     return d;
 }
-function setStep(id, status, ms) {
-    const el = document.getElementById(`step-${id}`);
+function setS(id, st, ms) {
+    const el = document.getElementById("s-" + id);
     if (!el) return;
-    el.className = `srow ${status}`;
+    el.className = "srow " + st;
     const ico = el.querySelector(".sicon");
-    if (status === "active") ico.innerHTML = `<div class="spinner"></div>`;
-    else if (status === "done") ico.innerHTML = "✓";
+    if (st === "active") ico.innerHTML = `<div class="spin"></div>`;
+    else if (st === "done") ico.innerHTML = "✓";
     if (ms !== undefined) {
-        const msEl = document.getElementById(`ms-${id}`);
-        if (msEl) msEl.textContent = ms;
+        const me = document.getElementById("ms-" + id);
+        if (me) me.textContent = ms;
     }
 }
-function fg(label, value, cls = "") {
-    return `<div class="fl">${label}</div><div class="fv ${cls}">${value}</div>`;
+
+// ── cost bar update ───────────────────────────────────────
+function updateCost() {
+    const c = S.cost;
+    if (c.offlineMs !== null)
+        document.getElementById("costOffline").textContent =
+            `${c.offlineMs.toLocaleString()} ms (${(c.offlineMs/1000).toFixed(1)} s)`;
+    if (c.onlineMs !== null)
+        document.getElementById("costOnline").textContent = `${c.onlineMs} ms`;
+    if (c.rabaBatchMs !== null) {
+        const saved = ((c.rabaSeqMs - c.rabaBatchMs)).toFixed(0);
+        document.getElementById("costRaba").textContent =
+            `${c.rabaBatchMs} ms batch vs ${c.rabaSeqMs} ms seq — saved ${saved} ms`;
+    }
 }
 
-// ────────────────────────────────────────────────────────
-// Phase 1 — Registration steps
-// ────────────────────────────────────────────────────────
-function initRegSteps() {
-    const c = document.getElementById("regSteps"); c.innerHTML = "";
-    c.appendChild(makeStep("rkg", "1", "Key generation", "ECDSA P-256 keypair (sk_i, pk_i)"));
-    c.appendChild(makeStep("rts", "2", "Send to TA", "VIN + pk_i over secure channel"));
-    c.appendChild(makeStep("rtv", "3", "TA verifies VIN", "Check against vehicle registry"));
-    c.appendChild(makeStep("rtn", "4", "TA samples nonce", "256-bit random nonce"));
-    c.appendChild(makeStep("rsi", "5", "TA issues σ_i", "Sign<sub>sk_TA</sub>(H(pk_i ∥ nonce))"));
+// ── merkle tree renderer ──────────────────────────────────
+function renderMerkleTree(treeViz, leafHex, rootHex) {
+    document.getElementById("leafHex").textContent = leafHex;
+    document.getElementById("rootHex").textContent = rootHex;
+
+    const chain = document.getElementById("mtChain");
+    chain.innerHTML = "";
+
+    // Show from root-1 down to leaf (level 7 → level 0)
+    const levels = [...treeViz].reverse();
+    levels.forEach(lv => {
+        const lbl = lv.level === 7 ? "Level 7 → Root" :
+                    lv.level === 0 ? "Leaf → Level 1" :
+                    `Level ${lv.level} → Level ${lv.level + 1}`;
+
+        const el = document.createElement("div");
+        el.className = "mt-level";
+        const leftNode  = lv.yourIsRight ? lv.sibling   : lv.yourNode;
+        const rightNode = lv.yourIsRight ? lv.yourNode  : lv.sibling;
+        const leftCls   = lv.yourIsRight ? "sib" : (lv.level === 0 ? "leaf" : "your");
+        const rightCls  = lv.yourIsRight ? (lv.level === 0 ? "leaf" : "your") : "sib";
+        const leftLbl   = lv.yourIsRight ? "sibling" : (lv.level === 0 ? "your leaf" : "your node");
+        const rightLbl  = lv.yourIsRight ? (lv.level === 0 ? "your leaf" : "your node") : "sibling";
+
+        el.innerHTML = `
+          <div class="mt-level-hdr">
+            <span>Level ${lv.level}</span>
+            <span style="color:var(--muted)">→ Poseidon(left, right) →</span>
+            <span>Level ${lv.level + 1}</span>
+          </div>
+          <div class="mt-inputs">
+            <div class="mt-node ${leftCls}">
+              <span class="nlabel">${leftLbl}</span>
+              ${leftNode.short}
+            </div>
+            <div class="mt-node ${rightCls}">
+              <span class="nlabel">${rightLbl}</span>
+              ${rightNode.short}
+            </div>
+          </div>
+          <div class="mt-parent">
+            <span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">parent at level ${lv.level+1}: </span>
+            <span style="font-family:var(--mono);font-size:10px;color:var(--blue)">${lv.parent.short}</span>
+          </div>`;
+        chain.appendChild(el);
+    });
+    document.getElementById("merkleTree").style.display = "";
 }
 
+// ── phase actions ─────────────────────────────────────────
 function doRegister() {
     const vin = document.getElementById("vinInput").value.trim();
     document.getElementById("btnReg").disabled = true;
-    document.getElementById("credCard").style.display = "none";
-    initRegSteps();
-    setStep("rkg", "active");
-    send({ cmd: "register", vin });
-}
+    ["sk_card","pk_card","nonce_card","sigma_card"].forEach(id =>
+        document.getElementById(id).style.display = "none");
 
-// ────────────────────────────────────────────────────────
-// Phase 2 — AST Acquisition steps
-// ────────────────────────────────────────────────────────
-function initAcqSteps() {
-    const c = document.getElementById("acqSteps"); c.innerHTML = "";
-    c.appendChild(makeStep("acon", "1", "Connect to AIS (RSU)"));
-    c.appendChild(makeStep("acrt", "2", "Receive AIS certificate", "Verify sig_TA against pk_TA"));
-    c.appendChild(makeStep("azkp", "3", "ZKP of σ_i possession", "π_σ proves knowledge without revealing sk_i"));
-    c.appendChild(makeStep("aast", "4", "AST issued", "{sid, t_start, t_end, cap, r}"));
-    c.appendChild(makeStep("amkl", "5", "Build Merkle tree", "Real Poseidon hashing, depth-8"));
-    c.appendChild(makeStep("abrg", "6", "Bridge path", "8×32B Poseidon hashes → R_global"));
-    c.appendChild(makeStep("asgn", "7", "AIS signs root", "sig_AIS over (AST ∥ R_local ∥ π_bridge)"));
-    c.appendChild(makeStep("apre", "8", "Offline cache fill", "Groth16 proofs (real timing shown)"));
+    const c = document.getElementById("regSteps"); c.innerHTML = "";
+    c.appendChild(mkStep("rk", "1", "Generate keypair (sk<sub>i</sub>, pk<sub>i</sub>)", "256-bit BN254 scalar"));
+    c.appendChild(mkStep("rs", "2", "Send VIN + pk<sub>i</sub> to TA", "Secure out-of-band channel"));
+    c.appendChild(mkStep("rv", "3", "TA verifies VIN", "Check vehicle registry"));
+    c.appendChild(mkStep("rn", "4", "TA samples 256-bit nonce"));
+    c.appendChild(mkStep("ri", "5", "TA issues σ<sub>i</sub> = Sign<sub>sk_TA</sub>(H(pk ∥ nonce))", "Credential stored in OBU tamper-proof module"));
+    setS("rk", "active");
+    wsSend({ cmd: "register", vin });
 }
 
 function doAcquire() {
     if (!S.regDone) return;
     document.getElementById("btnAcq").disabled = true;
-    document.getElementById("merkleCard").style.display = "none";
-    document.getElementById("bridgeCard").style.display = "none";
     document.getElementById("cacheCard").style.display = "none";
-    initAcqSteps();
-    setStep("acon", "active");
-    send({ cmd: "acquire" });
-}
+    document.getElementById("astFieldsCard").style.display = "none";
+    document.getElementById("merkleTree").style.display = "none";
 
-// ────────────────────────────────────────────────────────
-// Phase 3 — Online BSM steps
-// ────────────────────────────────────────────────────────
-function initOnlineSteps() {
-    const cp = document.getElementById("onlineProver"); cp.innerHTML = "";
-    cp.appendChild(makeStep("od",  "▶", "Dequeue cache slot", "Array pop, one-time key (sk_ot, pk_ot, π)"));
-    cp.appendChild(makeStep("os",  "✍", "ECDSA-P256 sign", "σ_ot = Sign_{sk_ot}(m ∥ t_cur)"));
-    cp.appendChild(makeStep("oe",  "🗑", "Erase sk_ot", "One-time use enforced, tamper-proof storage"));
-    cp.appendChild(makeStep("ob",  "→", "Broadcast BSM packet", "529 bytes total"));
-
-    const cr = document.getElementById("onlineRecv"); cr.innerHTML = "";
-    cr.appendChild(makeStep("rb",  "🔗", "Bridge path check", "H_Pos(R_local, π_bridge) = R_global"));
-    cr.appendChild(makeStep("re",  "🔑", "ECDSA verify", "σ_ot valid under pk_ot for (m ∥ t_cur)"));
-    cr.appendChild(makeStep("rg",  "⚡", "Groth16 verify", "Proof (A,B,C) over (R_local, t_gen, pk_ot)"));
-    cr.appendChild(makeStep("rok", "✓", "Authenticated!"));
+    const c = document.getElementById("acqSteps"); c.innerHTML = "";
+    c.appendChild(mkStep("ac", "1", "Connect to AIS / RSU"));
+    c.appendChild(mkStep("ar", "2", "Verify AIS certificate", "Sign<sub>sk_TA</sub>(pk_AIS) — prevents rogue AIS"));
+    c.appendChild(mkStep("az", "3", "ZKP of credential σ<sub>i</sub>", "Groth16 credential proof — proves registration without revealing sk_i"));
+    c.appendChild(mkStep("aa", "4", "Receive AST + Merkle proof", "{sid, t_start, t_end, cap, r, π_MT, R_local}"));
+    c.appendChild(mkStep("am", "5", "Build depth-8 Poseidon Merkle tree", "Real Poseidon hashing — computing now"));
+    c.appendChild(mkStep("ab", "6", "Receive bridge path π_bridge", "8 × 32 B = 256 B — links R_local → R_global"));
+    c.appendChild(mkStep("ap", "7", "Offline cache fill", "ONE real Groth16 prove shown (rest simulated for speed)"));
+    setS("ac", "active");
+    wsSend({ cmd: "acquire" });
 }
 
 function doBSM() {
     if (!S.acqDone) return;
     document.getElementById("btnBSM").disabled = true;
+    document.getElementById("ecdsaCard").style.display = "none";
     document.getElementById("packetCard").style.display = "none";
-    document.getElementById("onlineSummary").style.display = "none";
-    initOnlineSteps();
-    setStep("od", "active");
-    send({ cmd: "online_bsm" });
+    document.getElementById("g16Card").style.display = "none";
+    document.getElementById("timingSummary").style.display = "none";
+
+    const cp = document.getElementById("proverSteps"); cp.innerHTML = "";
+    cp.appendChild(mkStep("pd", "▶", "Cache dequeue", "Array pop — slot = (π, sk_ot, pk_ot, t_gen) — < 0.01 ms"));
+    cp.appendChild(mkStep("ps", "✍", "ECDSA-P256 sign σ_ot = Sign<sub>sk_ot</sub>(m ∥ t_cur)", "Only online crypto op — ~0.2 ms"));
+    cp.appendChild(mkStep("pe", "🗑", "Erase sk_ot", "One-time use enforced — tamper-proof storage"));
+    cp.appendChild(mkStep("pb", "→", "Broadcast packet", "529 bytes over IEEE 802.11p"));
+
+    const cr = document.getElementById("recvSteps"); cr.innerHTML = "";
+    cr.appendChild(mkStep("rb", "🔗", "Bridge path check", "H_Pos(R_local, π_bridge) = R_global — confirms AIS zone"));
+    cr.appendChild(mkStep("re", "🔑", "ECDSA verify σ_ot", "Binds message content to one-time key — ~0.4 ms"));
+    cr.appendChild(mkStep("rg", "⚡", "Groth16 verify π", "Checks Merkle membership + time range + pk_ot binding — ~39 ms"));
+    cr.appendChild(mkStep("ro", "✓", "Authenticated!"));
+
+    setS("pd", "active");
+    wsSend({ cmd: "online_bsm" });
 }
 
-// ────────────────────────────────────────────────────────
-// Phase 4 — RABA
-// ────────────────────────────────────────────────────────
 function doRABA() {
     const k = parseInt(document.getElementById("kSlider").value);
     document.getElementById("btnRaba").disabled = true;
-    document.getElementById("rabaGenCard").style.display = "";
-    document.getElementById("rabaQueues").style.display = "none";
-    document.getElementById("rabaResults").style.display = "none";
-    document.getElementById("rabaGenList").innerHTML = "";
-    document.getElementById("rabaBar").style.width = "0%";
-    document.getElementById("rabaGenInfo").textContent = `Generating ${k} Groth16 proofs…`;
-    ["qcE","qcW","qcR"].forEach(id => document.getElementById(id).textContent = "—");
-    ["qsE","qsW","qsR"].forEach(id => document.getElementById(id).textContent = "waiting…");
-    document.getElementById("rabaResultBody").innerHTML = "";
-    send({ cmd: "raba", k });
+    document.getElementById("rabaGenProg").innerHTML =
+        `<div class="pbar-wrap"><div class="pbar yellow" id="rabaBar" style="width:0%"></div></div>
+         <div style="margin-top:5px;font-size:10px;color:var(--muted)" id="rabaGenTxt">Generating ${k} proofs…</div>`;
+    ["rabaE","rabaW","rabaR"].forEach(id => {
+        const el = document.getElementById(id);
+        const big = el.querySelector(".big-num");
+        if (big) { big.textContent = "—"; }
+    });
+    S.raba = { seqTotal: 0, batchTotal: 0, results: {} };
+    wsSend({ cmd: "raba", k });
 }
 
-// ────────────────────────────────────────────────────────
-// Message Handlers
-// ────────────────────────────────────────────────────────
+// ── message handlers ──────────────────────────────────────
 const handlers = {
 
     init(m) {
-        document.getElementById("devInfo").textContent = `${m.hostname || "localhost"}  ·  4000`;
+        document.getElementById("devBadge").textContent = `${m.hostname}  ·  ${m.ip}:4000`;
     },
 
-    // ── Phase 1 ──────────────────────────────────────────
+    // Phase 1
     reg(m) {
-        const map = {
-            keygen_start : ["rkg", "active"],
-            keygen_done  : ["rkg", "done"],
-            ta_send      : ["rts", "active"],
-            ta_verify    : ["rtv", "active"],
-            ta_nonce     : ["rtn", "active"],
-            ta_sign      : ["rsi", "active"],
-        };
         if (m.step === "keygen_done") {
-            setStep("rkg", "done"); setStep("rts", "active");
+            setS("rk", "done"); setS("rs", "active");
         } else if (m.step === "ta_send") {
-            setStep("rts", "done"); setStep("rtv", "active");
+            setS("rs", "done"); setS("rv", "active");
         } else if (m.step === "ta_verify") {
-            setStep("rtv", "done"); setStep("rtn", "active");
+            setS("rv", "done"); setS("rn", "active");
         } else if (m.step === "ta_nonce") {
-            setStep("rtn", "done"); setStep("rsi", "active");
+            setS("rn", "done"); setS("ri", "active");
+            document.getElementById("nonce_card").style.display = "";
+            document.getElementById("nonce_hex").textContent = m.nonce_hex;
+        }
+        if (m.step === "keygen_done") {
+            document.getElementById("sk_card").style.display = "";
+            document.getElementById("sk_hex").textContent = m.sk_hex;
+            document.getElementById("pk_card").style.display = "";
+            document.getElementById("pk_x").textContent = m.pk_x;
+            document.getElementById("pk_y").textContent = m.pk_y;
         }
     },
 
     reg_complete(m) {
-        setStep("rsi", "done");
+        setS("ri", "done");
         S.regDone = true;
-        document.getElementById("dot0").classList.add("done");
+        document.getElementById("pnd1").classList.add("done");
+        document.getElementById("pnl0").classList.add("done");
         document.getElementById("btnReg").disabled = false;
         document.getElementById("btnAcq").disabled = false;
-        document.getElementById("acqNote").textContent = "";
-        const c = document.getElementById("credFg");
-        c.innerHTML = fg("VIN", m.vin, "orange") + fg("pk stored", m.pk_stored, "blue") +
-            fg("σ_i", m.sig_stored + " [64 B]", "purple") + fg("pk_TA", m.pk_ta, "muted");
-        document.getElementById("credCard").style.display = "";
+
+        document.getElementById("sigma_card").style.display = "";
+        document.getElementById("sigma_r").textContent = m.sigma_r;
+        document.getElementById("sigma_s").textContent = m.sigma_s;
+        document.getElementById("pk_ta").textContent   = m.pk_ta;
     },
 
-    // ── Phase 2 ──────────────────────────────────────────
+    // Phase 2
     ast(m) {
         if (m.step === "connect_start") {
-            setStep("acon", "active");
+            setS("ac", "active");
         } else if (m.step === "cert_received") {
-            setStep("acon", "done"); setStep("acrt", "active");
+            setS("ac", "done"); setS("ar", "active");
         } else if (m.step === "zkp_start") {
-            setStep("acrt", "done"); setStep("azkp", "active");
+            setS("ar", "done"); setS("az", "active");
         } else if (m.step === "zkp_done") {
-            setStep("azkp", "done"); setStep("aast", "active");
+            setS("az", "done"); setS("aa", "active");
         } else if (m.step === "ast_issued") {
-            setStep("aast", "done"); setStep("amkl", "active");
-        } else if (m.step === "merkle_start") {
-            setStep("amkl", "active");
+            setS("aa", "done"); setS("am", "active");
+            document.getElementById("astFieldsCard").style.display = "";
+            const fg = document.getElementById("astFieldsFg");
+            fg.innerHTML = `
+              <div class="fl">sid</div><div class="fv orange">${m.sid_hex}</div>
+              <div class="fl">t_start</div><div class="fv yellow">${m.tStart_hex} <span style="color:var(--muted)">(${new Date(parseInt(m.tStart)*1000).toLocaleTimeString()})</span></div>
+              <div class="fl">t_end</div><div class="fv yellow">${m.tEnd_hex}</div>
+              <div class="fl">cap</div><div class="fv muted">${m.cap_hex}</div>
+              <div class="fl">r (blind)</div><div class="fv muted">${m.r_hex}</div>`;
         } else if (m.step === "merkle_done") {
-            setStep("amkl", "done"); setStep("abrg", "active");
-            document.getElementById("merkleCard").style.display = "";
-            document.getElementById("merkleFg").innerHTML =
-                fg("Root R_local", m.root, "green") +
-                fg("Depth", m.depth) +
-                fg("Leaves", m.numLeaves) +
-                fg("Leaf index", m.leafIndex) +
-                fg("AST leaf hash", m.leaf, "orange");
+            setS("am", "done"); setS("ab", "active");
+            renderMerkleTree(m.treeViz, m.leaf_hex, m.root_hex);
         } else if (m.step === "bridge_path") {
-            setStep("abrg", "done"); setStep("asgn", "active");
-            document.getElementById("bridgeCard").style.display = "";
-            document.getElementById("bridgeFg").innerHTML =
-                fg("Bridge depth", `${m.bridgeDepth} Poseidon hashes`) +
-                fg("Bridge bytes", `${m.bridgeBytes} B (${m.bridgeDepth}×32 B)`) +
-                fg("R_global", m.R_global, "green");
-        } else if (m.step === "ais_signed") {
-            setStep("asgn", "done"); setStep("apre", "active");
+            setS("ab", "done"); setS("ap", "active");
         } else if (m.step === "precomp_start") {
             document.getElementById("cacheCard").style.display = "";
         } else if (m.step === "precomp_slot") {
             const pct = (m.done / m.total * 100).toFixed(0);
             document.getElementById("cacheBar").style.width = pct + "%";
+            document.getElementById("cacheInfo").textContent =
+                `Slot ${m.done}/${m.total} — ${m.ms} ms / slot — ~${(60000/m.ms).toFixed(0)} slots/min on RPi 4`;
+            if (m.real && m.pi_a_hex) {
+                document.getElementById("slotProofCard").style.display = "";
+                document.getElementById("pi_a").textContent = m.pi_a_hex;
+                document.getElementById("pi_b").textContent = m.pi_b_hex;
+                document.getElementById("pi_c").textContent = m.pi_c_hex;
+            }
             const li = document.createElement("div");
             li.className = "srow done";
-            const tag = m.real
-                ? `<span class="badge b">REAL</span>`
-                : `<span class="badge p">simulated</span>`;
             li.innerHTML = `<div class="sicon">✓</div>
-              <div class="stext">Slot ${m.done}: Groth16 proof + ECDSA-P256 keypair ${tag}
-              <small>${m.ms} ms per slot · $(${(60000 / m.ms).toFixed(0)} slots/min on RPi 4</small></div>`;
+              <div class="stext">Slot ${m.done}: Groth16 π + ECDSA-P256 keypair
+                ${m.real ? '<span class="badge b">REAL</span>' : '<span class="badge p">simulated</span>'}
+                <small>${m.ms} ms prove time</small></div>`;
             document.getElementById("cacheSlots").appendChild(li);
         }
     },
 
     ast_complete(m) {
-        setStep("apre", "done");
+        setS("ap", "done");
         S.acqDone = true;
-        document.getElementById("dot1").classList.add("done");
+        S.cost.offlineMs = m.cacheSize * m.proveMs;
+        updateCost();
+        document.getElementById("pnd2").classList.add("done");
+        document.getElementById("pnl1").classList.add("done");
         document.getElementById("btnAcq").disabled = false;
         document.getElementById("btnBSM").disabled = false;
-        document.getElementById("bsmNote").textContent = "";
         document.getElementById("btnRaba").disabled = false;
-        document.getElementById("cacheFg").innerHTML =
-            fg("R_local", m.merkleRoot, "green") +
-            fg("Cache size", `${m.cacheSize} slots`) +
-            fg("Prove time", `${m.proveMs} ms / slot (snarkjs)`) +
-            fg("Fill rate", `${m.slotsPerMin} slots/min`) +
-            fg("t_start", m.tStart) +
-            fg("t_end", m.tEnd);
     },
 
-    // ── Phase 3 ──────────────────────────────────────────
+    // Phase 3
     online(m) {
         if (m.side === "prover") {
             if (m.step === "dequeue") {
-                setStep("od", "done", `${m.ms} ms`); setStep("os", "active");
+                setS("pd", "done", `${m.ms} ms`);
+                setS("ps", "active");
             } else if (m.step === "ecdsa_sign") {
-                setStep("os", "done", `${m.ms} ms`); setStep("oe", "active");
+                setS("ps", "done", `${m.ms} ms`);
+                setS("pe", "active");
+                document.getElementById("ecdsaCard").style.display = "";
+                document.getElementById("ot_sk").textContent      = m.sk_hex;
+                document.getElementById("ot_pk").textContent      = m.pk_hex;
+                document.getElementById("ot_sig").textContent     = m.sig_hex;
+                document.getElementById("ot_payload").textContent = m.payload;
             } else if (m.step === "erase_sk") {
-                setStep("oe", "done"); setStep("ob", "active");
+                setS("pe", "done"); setS("pb", "active");
             } else if (m.step === "broadcast") {
-                setStep("ob", "done", `${m.totalMs} ms total`);
-                // Show packet
-                const pv = document.getElementById("packetView");
-                const p  = m.packet;
-                pv.innerHTML = `<div class="pkt-sec">Message (BSM payload)</div>
-                  <div style="color:var(--text)">${p.m}</div>
-                  <div style="color:var(--muted)">${p.t_cur}</div>
-                  <div class="pkt-sec">Authentication (pre-cached ZKP)</div>
-                  <div style="color:var(--purple)">π<sup>(s)</sup> = ${p.pi_s}</div>
-                  <div style="color:var(--blue)">pk_ot = ${p.pk_ot}</div>
-                  <div style="color:var(--orange)">σ_ot = ${p.sigma_ot}</div>
-                  <div class="pkt-sec">Merkle credential</div>
-                  <div style="color:var(--green)">R_local = ${p.R_local}</div>
-                  <div style="color:var(--green)">π_bridge = ${p.pi_bridge}</div>
-                  <div style="color:var(--muted)">t_gen = ${p.t_gen}</div>
-                  <div class="pbytes">Total: ${p.totalBytes} bytes</div>`;
+                setS("pb", "done", `${m.totalMs} ms total`);
+                const p = m.packet;
+                document.getElementById("pktView").innerHTML = `
+                  <div class="pkt-sec">BSM Payload</div>
+                  <span style="color:var(--text)">${p.m}</span>
+                  <br><span style="color:var(--muted)">t_cur = ${p.t_cur}</span>
+                  <div class="pkt-sec">Pre-cached Groth16 Proof (π) [128 B]</div>
+                  <span style="color:var(--purple)">${p.pi_s_hex}</span>
+                  <div class="pkt-sec">One-Time Key + Signature [97 B]</div>
+                  pk_ot = <span style="color:var(--blue)">${p.pk_ot_hex}</span>
+                  <br>σ_ot = <span style="color:var(--orange)">${p.sigma_hex}</span>
+                  <div class="pkt-sec">Merkle Credential [296 B]</div>
+                  R_local = <span style="color:var(--green)">${p.R_local_hex}</span>
+                  <br>π_bridge = <span style="color:var(--muted)">${p.pi_bridge}</span>
+                  <br>t_gen = <span style="color:var(--muted)">${p.t_gen}</span>
+                  <div class="pkt-total">Total: ${p.totalBytes} bytes ≪ 1500 B (802.11p MTU)</div>`;
                 document.getElementById("packetCard").style.display = "";
-                setStep("rb", "active");
+                setS("rb", "active");
             }
         } else if (m.side === "recv") {
-            if (m.step === "recv_start") {
-                // waiting
-            } else if (m.step === "bridge_check") {
-                setStep("rb", "done", `${m.ms} ms`); setStep("re", "active");
+            if (m.step === "bridge_check") {
+                setS("rb", "done", `${m.ms} ms`);
+                setS("re", "active");
             } else if (m.step === "ecdsa_verify") {
-                setStep("re", "done", `${m.ms} ms`); setStep("rg", "active");
+                setS("re", "done", `${m.ms} ms`);
+                setS("rg", "active");
             } else if (m.step === "groth16_start") {
-                // spinner already set by "active"
+                // spinner already set
             } else if (m.step === "groth16_done") {
-                setStep("rg", "done", `${m.ms} ms`); setStep("rok", "done");
+                setS("rg", "done", `${m.ms} ms`);
+                setS("ro", "done");
+                document.getElementById("g16Card").style.display = "";
+                document.getElementById("g16_pi").textContent = m.pi_hex;
+                document.getElementById("g16Summary").innerHTML = `
+                  <div class="fl">pairings</div><div class="fv blue">${m.pairings} (k+3 batch formula)</div>
+                  <div class="fl">time</div><div class="fv green">${m.ms} ms</div>
+                  <div class="fl">valid</div><div class="fv green">${m.valid ? "✓ yes" : "✗ no"}</div>`;
             }
         }
     },
 
     online_complete(m) {
-        S.bsmDone = true;
-        document.getElementById("dot2").classList.add("done");
+        S.bsmCount++;
+        S.cost.onlineMs = m.totalProverMs;
+        updateCost();
+        document.getElementById("pnd3").classList.add("done");
+        document.getElementById("pnl2").classList.add("done");
         document.getElementById("btnBSM").disabled = false;
 
-        const fg_html = fg("Cache dequeue", `${m.deqMs} ms`) +
-            fg("ECDSA-P256 sign", `${m.signMs} ms ← online cost`) +
-            fg("Total prover online", `${m.totalProverMs} ms (${m.pctBSM}% of BSM cycle)`);
-        document.getElementById("onlineFg").innerHTML = fg_html;
-
-        const maxMs = 50; // scale bar to 50ms = 100%
-        const barHTML = `
-          <div class="trow">
-            <span class="tlabel">Dequeue</span>
-            <div class="tbar-w"><div class="tbar indiv" style="width:${Math.max(2, m.deqMs/maxMs*100)}%">${m.deqMs} ms</div></div>
-          </div>
-          <div class="trow">
-            <span class="tlabel">ECDSA sign</span>
-            <div class="tbar-w"><div class="tbar batch" style="width:${Math.max(4, m.signMs/maxMs*100)}%">${m.signMs} ms</div></div>
+        const maxMs = Math.max(50, m.g16Ms * 1.2);
+        document.getElementById("timingBody").innerHTML = `
+          <div class="trow"><span class="t-label">Dequeue</span>
+            <div class="t-barwrap"><div class="t-bar indiv" style="width:${Math.max(2, m.deqMs/maxMs*100)}%">${m.deqMs} ms</div></div></div>
+          <div class="trow"><span class="t-label">ECDSA sign</span>
+            <div class="t-barwrap"><div class="t-bar indiv" style="width:${Math.max(4, m.signMs/maxMs*100)}%">${m.signMs} ms ← prover online cost</div></div></div>
+          <div class="trow"><span class="t-label">Groth16 ver.</span>
+            <div class="t-barwrap"><div class="t-bar batch" style="width:${Math.min(100, m.g16Ms/maxMs*100)}%">${m.g16Ms} ms ← receiver cost</div></div></div>
+          <div style="margin-top:8px;font-size:10px;color:var(--muted)">
+            Prover total: <strong style="color:var(--green)">${m.totalProverMs} ms</strong>
+            (${m.pctBSM}% of 100ms BSM cycle) ·
+            Receiver: <strong style="color:var(--blue)">${m.g16Ms} ms</strong>
           </div>`;
-        document.getElementById("onlineBars").innerHTML = barHTML;
-        document.getElementById("onlineSummary").style.display = "";
+        document.getElementById("timingSummary").style.display = "";
     },
 
-    // ── Phase 4 ──────────────────────────────────────────
+    // Phase 4
     raba_start(m) {
-        document.getElementById("rabaGenInfo").textContent = `Generating ${m.k} Groth16 proofs… (offline cost — shown for authenticity)`;
+        document.getElementById("rabaGenTxt").textContent =
+            `Generating ${m.k} Groth16 proofs (offline cost — real crypto for authenticity)…`;
     },
 
     raba_proof_ready(m) {
-        document.getElementById("rabaBar").style.width = (m.index / m.k * 100) + "%";
-        document.getElementById("rabaGenInfo").textContent = `Proof ${m.index}/${m.k} ready — ${m.ms} ms — BSM: ${m.bsm}`;
-        const li = document.createElement("div");
-        li.className = "srow done";
-        li.innerHTML = `<div class="sicon">✓</div><div class="stext">${m.bsm} <small>${m.ms} ms</small></div>`;
-        document.getElementById("rabaGenList").appendChild(li);
+        const bar = document.getElementById("rabaBar");
+        if (bar) bar.style.width = (m.index / m.k * 100) + "%";
+        const txt = document.getElementById("rabaGenTxt");
+        if (txt) txt.textContent = `Proof ${m.index}/${m.k} — ${m.ms} ms — BSM ${m.bsm}`;
     },
 
     raba_classified(m) {
-        document.getElementById("rabaQueues").style.display = "";
         document.getElementById("qcE").textContent = m.E;
         document.getElementById("qcW").textContent = m.W;
         document.getElementById("qcR").textContent = m.R;
-        document.getElementById("qsE").textContent = `${m.E} proof${m.E !== 1 ? "s" : ""} · D_E = 200 ms`;
-        document.getElementById("qsW").textContent = `${m.W} proofs · D_W = 500 ms`;
-        document.getElementById("qsR").textContent = `${m.R} proofs · D_R = 2000 ms`;
+        document.getElementById("qsE").textContent = `${m.E} proof${m.E!==1?"s":""} · verifying individually`;
+        document.getElementById("qsW").textContent = `${m.W} proofs · batch verifying`;
+        document.getElementById("qsR").textContent = `${m.R} proofs · batch verifying`;
     },
 
     raba_class_start(m) {
-        const qStat = document.getElementById("qs" + m.cls);
-        if (qStat) qStat.innerHTML = `<div class="spinner"></div> verifying…`;
+        const body = document.getElementById("raba" + m.cls);
+        const qs   = document.getElementById("qs" + m.cls);
+        if (qs) qs.innerHTML = `<div class="spin"></div> verifying ${m.k} proof${m.k!==1?"s":""}…`;
     },
 
     raba_class_done(m) {
-        // Update queue column
-        const bodyId = { E: "qBodyE", W: "qBodyW", R: "qBodyR" }[m.cls];
-        const body   = document.getElementById(bodyId);
-        const color  = { E: "var(--red)", W: "var(--yellow)", R: "var(--green)" }[m.cls];
-        const budgetColor = parseFloat(m.budgetUsed) > 90 ? "var(--red)" : parseFloat(m.budgetUsed) > 60 ? "var(--yellow)" : "var(--green)";
+        if (!S.raba) S.raba = { seqTotal: 0, batchTotal: 0 };
+        S.raba.seqTotal   += parseFloat(m.seqMs);
+        S.raba.batchTotal += parseFloat(m.batchMs);
+
+        const budgColor = parseFloat(m.budgetUsed) > 85 ? "var(--red)"
+            : parseFloat(m.budgetUsed) > 55 ? "var(--yellow)" : "var(--green)";
+
+        const body = document.getElementById("raba" + m.cls);
         body.innerHTML = `
-          <div class="qcount ${m.cls}" >${m.k} proof${m.k !== 1 ? "s" : ""}</div>
-          <div class="qstat">${m.k === 1 ? "Individual verify" : "Batch verify"}</div>
-          <div class="qstat" style="margin-top:4px">
-            ${m.met ? '<span class="badge g">✓ deadline met</span>' : '<span class="badge r">✗ missed</span>'}
-            ${m.k > 1 ? `<span class="speedup-pill" style="margin-left:4px;font-size:10px">${m.speedup}×</span>` : ""}
-          </div>
-          <div class="deadline-bar" style="margin-top:6px">
-            <div class="deadline-fill" style="width:${Math.min(100, m.budgetUsed)}%;background:${budgetColor}"></div>
-          </div>
-          <div class="budget-label" style="color:${budgetColor}">${m.budgetUsed}% of ${m.deadline} ms deadline used</div>
-          <div class="qstat" style="margin-top:4px">${m.batchMs} ms batch · ${m.seqMs} ms seq</div>`;
-
-        // Add to results table
-        const rb = document.getElementById("rabaResultBody");
-        document.getElementById("rabaResults").style.display = "";
-        if (!rb.querySelector("table")) {
-            rb.innerHTML = `<table class="btable" style="width:100%">
-              <thead><tr>
-                <th>Class</th><th>k</th><th>Deadline</th>
-                <th>Seq (ms)</th><th>Batch (ms)</th><th>Speedup</th>
-                <th>Budget %</th><th>Pairings</th><th>Status</th>
-              </tr></thead><tbody id="rbTbody"></tbody></table>
-              <div style="margin-top:9px" id="rbBars"></div>`;
-        }
-        const tbody = document.getElementById("rbTbody");
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td><span class="badge ${m.cls === "E" ? "r" : m.cls === "W" ? "y" : "g"}">${m.label}</span></td>
-          <td class="ms">${m.k}</td>
-          <td>${m.deadline} ms</td>
-          <td class="ms" style="color:var(--red)">${m.seqMs}</td>
-          <td class="ms" style="color:var(--green)">${m.batchMs}</td>
-          <td><span class="speedup-pill" style="font-size:10px;padding:2px 7px">${m.speedup}×</span></td>
-          <td style="color:${parseFloat(m.budgetUsed) > 90 ? "var(--red)" : "var(--green)"}">${m.budgetUsed}%</td>
-          <td class="ms">${m.pairingsBatch} vs ${m.pairingsSeq}</td>
-          <td>${m.met ? '<span class="badge g">✓</span>' : '<span class="badge r">✗</span>'}</td>`;
-        tbody.appendChild(tr);
-
-        // Timing bars
-        const bars = document.getElementById("rbBars");
-        if (bars) {
-            const maxSeq = 2500;
-            bars.innerHTML += `
-              <div style="margin-bottom:5px;font-size:10px;color:var(--muted)">${m.label} (k=${m.k})</div>
-              <div class="trow">
-                <span class="tlabel">Sequential</span>
-                <div class="tbar-w"><div class="tbar seq" style="width:${Math.max(4, m.seqMs/maxSeq*100)}%">${m.seqMs} ms</div></div>
-              </div>
-              <div class="trow" style="margin-bottom:9px">
-                <span class="tlabel">Batch</span>
-                <div class="tbar-w"><div class="tbar batch" style="width:${Math.max(4, m.batchMs/maxSeq*100)}%">${m.batchMs} ms</div></div>
-              </div>`;
-        }
+          <div class="big-num rc-${m.cls}">${m.k}</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${m.label} proof${m.k!==1?"s":""}</div>
+          ${m.k > 1 ? `<div class="speedup" style="margin-bottom:8px">${m.speedup}× speedup</div>` : ""}
+          <div class="trow"><span class="t-label">Sequential</span>
+            <div class="t-barwrap"><div class="t-bar seq" style="width:${Math.max(8,m.seqMs/2000*100)}%">${m.seqMs} ms</div></div></div>
+          <div class="trow"><span class="t-label">Batch</span>
+            <div class="t-barwrap"><div class="t-bar batch" style="width:${Math.max(4,m.batchMs/2000*100)}%">${m.batchMs} ms</div></div></div>
+          <div class="dl-wrap"><div class="dl-fill" style="width:${Math.min(100,m.budgetUsed)}%;background:${budgColor}"></div></div>
+          <div style="font-size:10px;margin-top:3px;font-family:var(--mono);color:${budgColor}">${m.budgetUsed}% of ${m.deadline} ms deadline</div>
+          <div style="margin-top:6px">
+            ${m.met ? '<span class="badge g">✓ deadline met</span>' : '<span class="badge r">✗ deadline missed</span>'}
+            <span class="badge b" style="margin-left:4px">${m.pairingsBatch} vs ${m.pairingsSeq} pairings</span>
+          </div>`;
     },
 
     raba_complete(m) {
-        document.getElementById("dot3").classList.add("done");
+        S.cost.rabaSeqMs   = S.raba ? +S.raba.seqTotal.toFixed(1)   : null;
+        S.cost.rabaBatchMs = S.raba ? +S.raba.batchTotal.toFixed(1) : null;
+        updateCost();
+        document.getElementById("pnd4").classList.add("done");
+        document.getElementById("pnl3").classList.add("done");
         document.getElementById("btnRaba").disabled = false;
+        const txt = document.getElementById("rabaGenTxt");
+        if (txt) txt.textContent = "Complete ✓";
     },
 
     error(m) {
-        console.error("Server error:", m.message);
+        console.error(m.message);
         ["btnReg","btnAcq","btnBSM","btnRaba"].forEach(id => {
             const b = document.getElementById(id);
             if (b) b.disabled = false;
@@ -835,22 +1274,8 @@ const handlers = {
     },
 };
 
-// ────────────────────────────────────────────────────────
-// Init
-// ────────────────────────────────────────────────────────
-initRegSteps();
-initAcqSteps();
-initOnlineSteps();
+// ── boot ──────────────────────────────────────────────────
 connect();
-
-// Add btable CSS inline since it was in the original
-const style = document.createElement("style");
-style.textContent = `.btable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:10px;}
-.btable th{text-align:left;padding:4px 7px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:500;}
-.btable td{padding:4px 7px;border-bottom:1px solid var(--bg3);}
-.btable tr:last-child td{border-bottom:none;}
-.btable td.ms{color:var(--yellow);}`;
-document.head.appendChild(style);
 </script>
 </body>
 </html>
