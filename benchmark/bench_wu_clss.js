@@ -29,8 +29,8 @@ const os   = require("os");
 const fs   = require("fs");
 const path = require("path");
 
-const N_WARMUP = 3;
-const N_RUNS   = 20;
+const N_WARMUP = 20;
+const N_RUNS   = 500;
 
 function detectHardware() {
     if (process.platform === "linux" && fs.existsSync("/proc/cpuinfo")) {

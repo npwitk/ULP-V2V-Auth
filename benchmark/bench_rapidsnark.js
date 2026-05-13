@@ -29,7 +29,7 @@ const { execSync, execFileSync } = require("child_process");
 // -------------------------------------------------------
 // Config
 // -------------------------------------------------------
-const N_WARMUP = 3;
+const N_WARMUP = 10;
 const N_RUNS   = 20;
 
 const WASM = path.join("build", "ulp_v2v_auth_js", "ulp_v2v_auth.wasm");

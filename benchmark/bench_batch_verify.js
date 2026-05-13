@@ -36,8 +36,9 @@ function detectHardware() {
     return `${platform} — ${cpu}`;
 }
 
-const BATCH_SIZES = [1, 5, 10, 20, 30, 50];
-const N_REPEAT    = 3;
+const BATCH_SIZES = [18, 30, 50];   // Free flow, Moderate, Dense (paper Table 3)
+const N_WARMUP    = 20;             // discard first 20 verify rounds per k
+const N_REPEAT    = 500;            // timed repetitions per k
 
 const WASM = path.join("build", "ulp_v2v_auth_js", "ulp_v2v_auth.wasm");
 const ZKEY = path.join("keys",  "ulp_v2v_auth_final.zkey");
@@ -86,6 +87,11 @@ async function main() {
         const pubSigs = entries.map(e => e.publicSignals);
 
         // ---- 1. Sequential individual verify ----
+        // warmup
+        for (let r = 0; r < N_WARMUP; r++) {
+            for (const { proof, publicSignals } of entries)
+                await snarkjs.groth16.verify(vk, publicSignals, proof);
+        }
         const seqTimes = [];
         for (let r = 0; r < N_REPEAT; r++) {
             const t0 = performance.now();
@@ -98,6 +104,9 @@ async function main() {
         const seqMs = mean(seqTimes);
 
         // ---- 2. True batch verify ----
+        // warmup
+        for (let r = 0; r < N_WARMUP; r++)
+            await batchVerify(proofs, pubSigs, vk, batchCurve);
         const batchTimes = [];
         let batchValid = false;
         for (let r = 0; r < N_REPEAT; r++) {
@@ -153,7 +162,8 @@ async function main() {
     const outPath = path.join("results", "bench_batch_verify.json");
     fs.writeFileSync(outPath, JSON.stringify({
         hardware: detectHardware(),
-        circuit: "ULP_V2V_Auth(depth=8)",
+        circuit: "ULP_V2V_Auth(depth=16)",
+        nWarmup: N_WARMUP,
         nRepeat: N_REPEAT,
         timestamp: new Date().toISOString(),
         results: allResults,

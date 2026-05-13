@@ -32,8 +32,8 @@ const os     = require("os");
 const fs     = require("fs");
 const path   = require("path");
 
-const N_WARMUP = 3;
-const N_RUNS   = 20;
+const N_WARMUP = 20;
+const N_RUNS   = 500;
 
 // Lattice parameters from Jiang & Guo
 const M = 2048;    // matrix rows (= n in paper notation)
