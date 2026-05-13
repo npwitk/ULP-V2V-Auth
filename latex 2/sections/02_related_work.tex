@@ -1,0 +1,129 @@
+\section{Related Work}
+
+\subsection{Certificate-Based and Pseudonym Schemes}
+
+The Security Credential Management System (SCMS), standardized under IEEE 1609.2,
+provides the baseline security architecture for V2X communications. Vehicles are
+issued sets of pseudonym certificates (typically 20--100 per week) and rotate them
+periodically to reduce linkability. While SCMS provides a well-understood security
+model, it faces two practical challenges. First, the CRL distribution problem: as
+the number of revoked pseudonyms grows, CRL sizes increase substantially, and
+distributing updated CRLs across a vehicular network with intermittent connectivity
+is difficult~\cite{scopelliti2024}. Second, messages signed under the same pseudonym
+within a rotation period are linkable, enabling short-term trajectory tracking.
+
+\subsection{Batch Verification Signature Schemes}
+
+Wu et al.~\cite{zhang2024} proposed a certificateless signature scheme with
+batch verification for V2V, eliminating certificate management overhead and improving
+verification scalability. However, the scheme does not achieve full unlinkability:
+signatures still require pseudonymous identifiers linkable within a validity period.
+
+Jing et al.~\cite{zheng2018eaba} proposed the Efficient Anonymous Batch
+Authentication (EABA) scheme for VANETs, introducing a message classification
+algorithm to prioritize high-importance safety messages and a cooperative
+authentication mechanism between RSUs and vehicles. EABA reduces authentication
+delay through priority-based parallel processing but relies on pseudonym-based
+signatures and does not extend naturally to ZKP-based unlinkable credentials. We
+incorporate EABA's priority classification principle into our Receiver Module
+(Section~\ref{sec:concurrent}).
+
+\subsection{Zero-Knowledge Proof-Based Vehicular Authentication}
+
+ZKP-based approaches aim to eliminate the linkability problem entirely by allowing
+vehicles to prove authorization without revealing any identifier. However, existing
+works expose two recurring gaps specific to high-frequency V2V.
+
+Gabay et al.~\cite{gabay2020} proposed a privacy-preserving authentication scheme
+for connected \emph{electric vehicles} using blockchain and ZKP group membership
+proofs. Their scheme targets session-level authentication for EV charging contexts,
+not 10\,Hz broadcast safety message authentication. The blockchain
+consensus-based credential verification introduces latency incompatible with
+sub-100\,ms safety cycles.
+
+Jiang and Guo~\cite{jiang2024} designed an anonymous authentication scheme for the
+Internet of Vehicles using a main-secondary blockchain with ZKP. Pathak et
+al.~\cite{pathak2024} presented a blockchain-enhanced ZKP scheme for IoT mutual
+authentication. Both achieve strong anonymity but treat each authentication as a
+full-cost independent ZKP operation without session-level proof reuse or
+precomputation optimization.
+
+Zheng et al.~\cite{zheng2024hybrid} proposed a hybrid message authentication
+scheme for IoV combining ZKP for initial credential establishment with ECDSA for
+per-message signing. While this reduces per-message overhead, the ECDSA component
+reintroduces pseudonymous linking and the scheme does not support batch verification.
+
+Smahi et al.~\cite{smahi2023bvicvs} integrated zkSNARKs into a federated learning
+framework for V2X environments (BV-ICVs), demonstrating practical zkSNARK deployment
+in vehicular settings. However, their work targets data integrity for model updates
+rather than high-frequency safety message authentication.
+
+Liu et al.~\cite{liu2025} proposed a Merkle hash tree-based multi-access
+authentication scheme for vehicular networks that combines bilinear pairings with
+non-interactive ZKPs for initial credential issuance, and uses the Merkle tree as a
+lightweight access-counting structure for subsequent V2I authentications. While
+this work demonstrates the effectiveness of Merkle trees for reducing per-access
+overhead, it focuses on vehicle-to-\emph{infrastructure} authentication with server
+interaction on each cycle and does not address the ultra-low-latency requirements
+of direct V2V safety message broadcasting at 10\,Hz intervals without any server
+interaction.
+
+\subsection{Batch and Group Authentication in VANETs}
+
+Bagga et al.~\cite{bagga2020bbas} proposed BBAS-IoV combining V2V single
+authentication with blockchain-based batch cluster authentication. The BATKA
+scheme~\cite{batka2025} proposes ECC-based batch authentication with a tree-based
+group key structure for 5G-VANETs, reducing RSU verification overhead by grouping
+vehicles into clusters. However, BATKA assumes cluster stability that may not hold
+in high-speed highway scenarios: at a 100\,km/h relative lane speed difference, a
+vehicle exits a 300\,m cluster radius in approximately 10.8\,s. Furthermore,
+neither scheme achieves unlinkability within the batch window.
+
+Our scheme extends the batch verification principle to the Groth16 zk-SNARK setting,
+exploiting the algebraic structure of pairing-based proofs to achieve clean $k+3$
+pairing batch verification while maintaining full unlinkability---a property not
+achieved by any signature-based batch scheme.
+
+\subsection{Channel Impairments and Authentication Resilience}
+
+A limitation of most V2V authentication analyses is evaluation under ideal channel
+assumptions. Real-world IEEE 802.11p DSRC channels exhibit packet loss rates (PLR)
+of 10--40\% at 150--300\,m range under non-line-of-sight (NLoS) conditions---the
+dominant scenario in dense highway traffic~\cite{ramadan2025}. Under vehicle
+densities $>$100 vehicles/km, the EDCA mechanism becomes saturated, further
+increasing PLR. Ramadan et al.~\cite{ramadan2025} highlight that a cross-layer
+perspective integrating authentication overhead with MAC-layer congestion control
+is necessary for realistic performance analysis. We address these impairments
+through our smaller per-message payload ($\approx$2$\times$ smaller than SCMS)
+and batch verification's graceful packet-loss degradation (Section~\ref{sec:noise}).
+
+\subsection{Identified Gaps}
+
+Table~\ref{tab:comparison} summarises the comparison. The key gaps we address are:
+(i)~\emph{lack of session-based proof reuse} in existing ZKP schemes;
+(ii)~\emph{no offline/online decomposition} for high-frequency ZKP generation;
+(iii)~\emph{no Groth16 batch verification} for vehicular ZKP authentication;
+(iv)~\emph{insufficient treatment of AST issuance security, request policy, and
+epoch management}; and (v)~\emph{absence of real-world channel resilience analysis}.
+
+\begin{table}[t]
+\centering
+\caption{Comparison of V2V Authentication Approaches}
+\label{tab:comparison}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+\textbf{Scheme} & \textbf{Unlink.} & \textbf{No CRL} & \textbf{Precomp.} & \textbf{Batch} & \textbf{V2V} & \textbf{Epoch} \\
+\midrule
+SCMS/ECDSA & \texttimes & \texttimes & \texttimes & \checkmark & \checkmark & \texttimes \\
+Wu et al.~\cite{zhang2024} & \texttimes & \checkmark & \texttimes & \checkmark & \checkmark & \texttimes \\
+Gabay et al.~\cite{gabay2020} & \checkmark & \checkmark & \texttimes & \texttimes & \texttimes & \texttimes \\
+Jiang \& Guo~\cite{jiang2024} & \checkmark & \checkmark & \texttimes & \texttimes & \texttimes & \texttimes \\
+Pathak et al.~\cite{pathak2024} & \checkmark & \checkmark & \texttimes & \texttimes & \texttimes & \texttimes \\
+Zheng et al.~\cite{zheng2024hybrid} & \texttimes & \checkmark & \texttimes & \texttimes & \checkmark & \texttimes \\
+EABA~\cite{zheng2018eaba} & \texttimes & \texttimes & \texttimes & \checkmark & \checkmark & \texttimes \\
+\textbf{ULP-V2V-Auth (Ours)} & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}

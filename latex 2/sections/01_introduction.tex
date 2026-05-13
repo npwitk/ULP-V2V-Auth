@@ -1,0 +1,95 @@
+\section{Introduction}
+
+The advancement of intelligent transportation systems (ITS) has accelerated the
+deployment of Vehicle-to-Everything (V2X) communications, enabling vehicles to
+exchange real-time information for safety and traffic efficiency. Among V2X paradigms,
+Vehicle-to-Vehicle (V2V) communication is particularly critical for safety-related
+applications such as collision avoidance and emergency braking, especially in
+high-speed highway environments where authentication latency directly impacts safety
+outcomes.
+
+In direct V2V (sidelink) communication, vehicles exchange safety messages---such as
+Basic Safety Messages (BSMs)---directly over the air without relying on cellular
+infrastructure or roadside units. Vehicles must authenticate messages from
+neighbouring vehicles rapidly and reliably. The IEEE 802.11p standard and its
+successor IEEE 802.11bd impose strict latency constraints, typically requiring
+end-to-end message processing within 100--300\,ms, of which authentication
+constitutes a significant portion.
+
+\subsection{Problem Statement}
+
+Existing V2V authentication mechanisms face several specific limitations in
+safety-critical highway environments:
+
+\textbf{Certificate-based schemes} (e.g., ECDSA with X.509 certificates as used in
+IEEE 1609.2/SCMS) provide strong security guarantees but introduce non-negligible
+overhead. Each safety message requires signature generation, certificate attachment,
+and full signature verification at the receiver. In dense traffic scenarios where a
+vehicle may receive hundreds of BSMs per second, the cumulative verification cost
+creates processing bottlenecks. Certificate revocation relies on Certificate
+Revocation Lists (CRLs) that grow as $O(n)$ in the number of revoked pseudonyms,
+imposing significant storage and distribution overhead on the vehicular
+network~\cite{scopelliti2024}.
+
+\textbf{Signature-based and group signature schemes} reduce some certificate
+management overhead but often rely on computationally expensive bilinear pairing
+operations. Batch verification techniques have been proposed for signature-based
+schemes~\cite{zhang2024}, but these approaches still expose pseudonymous identifiers
+linkable across messages within a pseudonym's validity period, leaving vehicles
+vulnerable to trajectory tracking.
+
+\textbf{Existing ZKP-based vehicular authentication schemes} have emerged as a
+promising direction for privacy preservation. However, these approaches have not
+adequately addressed two critical aspects: (i)~the optimization of \emph{frequent
+authentication transactions}---vehicles broadcast safety messages every 100--300\,ms,
+requiring authentication at high frequency, and existing ZKP schemes treat each
+authentication as an independent, full-cost operation; and (ii)~\emph{efficient
+anonymous credential management}---existing schemes either rely on blockchain
+consensus for revocation (introducing latency) or do not provide a lightweight
+mechanism for verifying credential validity without revealing
+identity~\cite{jiang2024,pathak2024,zheng2024hybrid}.
+
+The specific open challenge we address is: \emph{how to design a V2V authentication
+protocol that minimizes per-message authentication cost through proof precomputation
+and session-based credential management, while maintaining unlinkability, efficient
+revocation, and scalability under dense traffic conditions.}
+
+\subsection{Proposed Solution and Technical Contributions}
+
+We propose \textbf{ULP-V2V-Auth} (Ultra-Low-Latency Privacy-Preserving V2V
+Authentication), a ZKP-based authentication framework whose novelty lies not in the
+use of ZKP itself, but in three specific design choices that jointly optimize the
+authentication pipeline for high-frequency V2V:
+
+\begin{enumerate}
+    \item \textbf{Anonymous Session Token (AST) Architecture with Merkle Tree
+    Revocation.} Instead of authenticating each message independently using
+    long-term credentials, vehicles acquire short-lived Anonymous Session Tokens
+    during low-activity periods. The AST acts as a session-level anonymous
+    credential, allowing multiple safety messages to be authenticated under a
+    single token without re-engaging the Trusted Authority. Revocation is managed
+    via a Merkle hash tree, where each vehicle only needs to maintain its own
+    Merkle inclusion proof ($O(\log n)$ in the number of active tokens) rather than
+    downloading a full CRL.
+
+    \item \textbf{Groth16 zk-SNARK with Proof-Slot Cache.} We decompose ZKP
+    generation into an offline precomputation phase and a near-zero online phase.
+    Circuit-level analysis shows that 97.3\% of constraints are message-independent;
+    leveraging this, complete Groth16 proofs are precomputed offline during AST
+    acquisition---each committed to a predicted BSM content---and stored in a proof
+    cache. The online phase reduces to a single Poseidon-2 hash (0.44\,ms), achieving
+    sub-1\,ms per-message authentication latency on OBU-class hardware.
+
+    \item \textbf{Batch Verification with DCV Fallback for Dense Traffic Scalability.}
+    Receiving vehicles aggregate multiple incoming ZKP proofs and verify them in a
+    single batched pairing check, exploiting the algebraic structure of Groth16. This
+    reduces per-proof verification cost from $3k$ pairings (individual) to
+    approximately $k+3$ pairings (batched), directly addressing the scalability
+    bottleneck in dense traffic. Our RPi~4 experiments confirm a $\mathbf{4.65\times}$
+    measured speedup at $k=30$, exceeding the theoretical $2.73\times$ pairing-count
+    ratio. We additionally adapt the divide-and-conquer verifier
+    (DCV)~\cite{ferrara2008finding} to the Groth16 setting, bounding adversarial
+    batch-injection fallback cost at $O(w \log k)$ sub-batch operations for $w$
+    invalid proofs---a $4.2\times$ improvement over naive $O(k)$ individual fallback
+    at $k=30$.
+\end{enumerate}
