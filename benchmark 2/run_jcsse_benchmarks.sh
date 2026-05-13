@@ -33,7 +33,7 @@ declare -A durations
 
 run_bench() {
     local name="$1"
-    local script="benchmark/$2"
+    local script="$SCRIPT_DIR/$2"
     step=$((step + 1))
 
     echo ""
