@@ -125,9 +125,9 @@ async function main() {
     console.log(`  Sign time (std)      : ${sd_ms.toFixed(3)} ms`);
     console.log(`\n  Original paper value : ~11.0 ms (i7-4790 @ 3.6 GHz, MIRACL, Ubuntu)`);
     console.log(`  This machine         : ${m_ms.toFixed(3)} ms (${hw})`);
-    console.log(`\n  SNAP online cost     : 0.439 ms`);
+    console.log(`\n  SNAP online cost     : 0.197 ms`);
     if (m_ms > 0) {
-        console.log(`  SNAP speedup vs Wu   : ${(m_ms / 0.439).toFixed(1)}× (on this hardware)`);
+        console.log(`  SNAP speedup vs Wu   : ${(m_ms / 0.197).toFixed(1)}× (on this hardware)`);
     }
 
     const results = {
@@ -144,8 +144,8 @@ async function main() {
         sign_times_ms     : times.map(t => parseFloat(t.toFixed(3))),
         original_hw       : "Intel i7-4790 @ 3.6 GHz, Ubuntu, MIRACL library",
         original_sign_ms  : 11.0,
-        snap_online_ms    : 0.439,
-        speedup_vs_snap   : parseFloat((m_ms / 0.439).toFixed(2)),
+        snap_online_ms    : 0.197,
+        speedup_vs_snap   : parseFloat((m_ms / 0.197).toFixed(2)),
     };
 
     fs.mkdirSync("results", { recursive: true });

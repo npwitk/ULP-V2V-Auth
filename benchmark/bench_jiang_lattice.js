@@ -224,8 +224,8 @@ async function main() {
     console.log(`  ${"T_s  (scalar vec ops)".padEnd(30)} ${(ts_mean.toFixed(4) + " ms").padStart(13)} ${"0.0151 ms".padStart(16)}`);
     console.log(`  ${"-".repeat(59)}`);
     console.log(`  ${"T_auth (total)".padEnd(30)} ${(total_this.toFixed(3) + " ms").padStart(13)} ${(total_paper.toFixed(3) + " ms").padStart(16)}`);
-    console.log(`\n  SNAP online cost      : 0.439 ms`);
-    console.log(`  SNAP speedup vs this  : ${(total_this / 0.439).toFixed(1)}× faster`);
+    console.log(`\n  SNAP online cost      : 0.197 ms`);
+    console.log(`  SNAP speedup vs this  : ${(total_this / 0.197).toFixed(1)}× faster`);
 
     const results = {
         benchmark          : "jiang_guo_lattice_auth",
@@ -248,8 +248,8 @@ async function main() {
         T_auth_total_ms    : parseFloat(total_this.toFixed(3)),
         original_hw        : "Intel i5-6500 @ 3.2 GHz, 16 GB RAM, Windows, Python",
         original_T_auth_ms : parseFloat(total_paper.toFixed(3)),
-        snap_online_ms     : 0.439,
-        speedup_vs_snap    : parseFloat((total_this / 0.439).toFixed(2)),
+        snap_online_ms     : 0.197,
+        speedup_vs_snap    : parseFloat((total_this / 0.197).toFixed(2)),
     };
 
     fs.mkdirSync("results", { recursive: true });
